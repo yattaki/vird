@@ -1,0 +1,48 @@
+{
+  "name": "vird",
+  "version": "1.0.0",
+  "description": "Vird is a great virtual DOM library that can extend rendering.",
+  "main": "dist/index.cjs.js",
+  "jsdelivr": "dist/index.iife.js",
+  "browser": "dist/index.iife.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "types": "tsc --emitDeclarationOnly --declaration --outDir dist",
+    "eslint": "eslint packages/index.ts",
+    "rollup": "rollup -c",
+    "dev": "npm run rollup -- -w",
+    "build": "npm run eslint && rimraf dist && npm run types && rollup -c",
+    "push": "git push && npm publish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yattaki/vird.git"
+  },
+  "keywords": [
+    "virtual",
+    "dom"
+  ],
+  "author": "yattaki <kozinnyou2015@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yattaki/vird/issues"
+  },
+  "homepage": "https://github.com/yattaki/vird#readme",
+  "dependencies": {
+    "@rollup/plugin-typescript": "^4.1.2",
+    "rollup": "^2.15.0",
+    "rollup-plugin-terser": "^6.1.0",
+    "typescript": "^3.9.5"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^3.2.0",
+    "@typescript-eslint/parser": "^3.2.0",
+    "eslint": "^7.2.0",
+    "eslint-config-standard": "^14.1.1",
+    "eslint-plugin-import": "^2.21.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1"
+  }
+}
