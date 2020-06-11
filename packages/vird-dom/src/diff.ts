@@ -1,4 +1,4 @@
-export const diff = <T = { [key: string]: any }> (checkObject?: T, comparisonObjet?: T) => {
+export function diff<T = { [key: string]: any }> (checkObject?: T, comparisonObjet?: T) {
   const diffObject: { [key: string]: [T[keyof T] | undefined, T[keyof T] | undefined] } = {}
 
   if (checkObject !== comparisonObjet) {
