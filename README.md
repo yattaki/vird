@@ -13,7 +13,7 @@ Vird is a great virtual DOM library that can extend rendering.
 Read from [CDN](https://cdn.jsdelivr.net/npm/vird/dist/index.iife.min.js).
 
 ```HTML
-<script src="https://cdn.jsdelivr.net/npm/vird/dist/index.iife.min.js" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/vird/dist/index.iife.min.js"></script>
 ```
 
 Install from [npm](https://www.npmjs.com/package/vird).
