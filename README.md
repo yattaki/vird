@@ -1,5 +1,11 @@
 # Vird
 
+![npm version](https://img.shields.io/npm/v/vird)
+![npm type definitions](https://img.shields.io/npm/types/vird)
+![npm bundle size](https://img.shields.io/bundlephobia/min/vird)
+![npm downloads](https://img.shields.io/npm/dt/vird)
+![npm license](https://img.shields.io/npm/l/vird)
+
 Vird is a great virtual DOM library that can extend rendering.
 
 ## Installation
