@@ -42,7 +42,7 @@ var index = /*#__PURE__*/Object.freeze({
     createComment: createComment
 });
 
-function createNode$1(node) {
+function createNode$1(node, trim = false) {
     const type = node.nodeName.toLocaleLowerCase();
     const properties = {};
     if (node instanceof Element) {
@@ -53,33 +53,11 @@ function createNode$1(node) {
     else {
         properties.textContent = node.textContent || '';
     }
-    const children = [...node.childNodes].map(node => createNode$1(node));
+    let children = [...node.childNodes].map(node => createNode$1(node, trim));
+    if (trim) {
+        children = children.filter(child => !['#text', '#comment'].includes(child.type) || !/^\s*$/.test(child.properties.textContent));
+    }
     return createNode(type, properties, children);
-}
-
-/*! *****************************************************************************
-Copyright (c) Microsoft Corporation.
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-***************************************************************************** */
-
-function __awaiter(thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
 }
 
 function diff(checkObject, comparisonObjet) {
@@ -220,27 +198,30 @@ class Renderer {
         }
         return newVirdNodes;
     }
-    renderDom(node) {
-        const virdNodes = [...node.childNodes].map(node => createNode$1(node));
+    renderDom(node, trim = false) {
+        const virdNodes = createNode$1(node, trim).children;
         return this.render(node, ...virdNodes);
     }
+    reRender(node) {
+        const virdNodes = this._renderMap.get(node);
+        if (virdNodes) {
+            this.render(node, ...virdNodes);
+        }
+    }
     createDispatcher(node) {
-        return (beforeCallback) => __awaiter(this, void 0, void 0, function* () {
+        return async (beforeCallback) => {
             if (beforeCallback) {
-                yield beforeCallback();
+                await beforeCallback();
             }
-            const virdNodes = this._renderMap.get(node);
-            if (virdNodes) {
-                this.render(node, ...virdNodes);
-            }
-        });
+            this.reRender(node);
+        };
     }
     createEffect(node, effect, initValue) {
         const dispatcher = this.createDispatcher(node);
         return {
             value: initValue,
             setEffect(value) {
-                dispatcher(() => __awaiter(this, void 0, void 0, function* () { this.value = yield effect(value); }));
+                dispatcher(async () => { this.value = await effect(value); });
             }
         };
     }

@@ -28,7 +28,7 @@ import * as vird from '../dist/index.js'
   await new Promise((resolve) => {
     // @ts-ignore
     const cloneElement = document.importNode(templateElement.content, true)
-    const virdNode = vird.VirdDom.createNode(cloneElement)
+    const virdNode = vird.VirdDom.createNode(cloneElement, true)
 
     vird.VirdDom.renderer.render(document.body, virdNode)
 

@@ -3,6 +3,7 @@ import { createNode } from './create-node'
 import { diff } from './diff'
 import { clearFragmentNode } from './clear-fragment-node'
 
+export type RenderItem = VirdNode | ((node: Node) => VirdNode)
 export type PropertyValueMap = { newValue?: string, oldValue?: string }
 export type PropertyTypeBinder = (node: Node, value: PropertyValueMap) => void
 export type PropertyTypeRegExpBinder = (node: Node, matchArray: RegExpMatchArray, value: PropertyValueMap) => string
@@ -57,7 +58,7 @@ export class Renderer {
     }
   }
 
-  render (node: Node, ...renderItems: (VirdNode | ((node: Node) => VirdNode))[]) {
+  render (node: Node, ...renderItems: RenderItem[]) {
     const renderVirdNodes = renderItems.map(item => typeof item === 'function' ? item(node) : item)
     const newVirdNodes = clearFragmentNode(renderVirdNodes)
     const oldVirdNodes = this.getChildrenVirdNode(node)
@@ -108,18 +109,22 @@ export class Renderer {
     return newVirdNodes
   }
 
-  renderDom (node: Node) {
-    const virdNodes = [...node.childNodes].map(node => createNode(node))
+  renderDom (node: Node, trim = false) {
+    const virdNodes = createNode(node, trim).children
 
     return this.render(node, ...virdNodes)
+  }
+
+  reRender (node: Node) {
+    const virdNodes = this._renderMap.get(node)
+    if (virdNodes) { this.render(node, ...virdNodes) }
   }
 
   createDispatcher (node: Node) {
     return async (beforeCallback?: () => void | Promise<void>) => {
       if (beforeCallback) { await beforeCallback() }
 
-      const virdNodes = this._renderMap.get(node)
-      if (virdNodes) { this.render(node, ...virdNodes) }
+      this.reRender(node)
     }
   }
 

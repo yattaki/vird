@@ -1,6 +1,6 @@
 import * as Vird from '../../vird/index'
 
-export function createNode (node: Node): Vird.VirdNode {
+export function createNode (node: Node, trim = false): Vird.VirdNode {
   const type = node.nodeName.toLocaleLowerCase()
   const properties: Vird.VirdNode['properties'] = {}
   if (node instanceof Element) {
@@ -11,7 +11,10 @@ export function createNode (node: Node): Vird.VirdNode {
     properties.textContent = node.textContent || ''
   }
 
-  const children = [...node.childNodes].map(node => createNode(node))
+  let children = [...node.childNodes].map(node => createNode(node, trim))
+  if (trim) {
+    children = children.filter(child => !['#text', '#comment'].includes(child.type) || !/^\s*$/.test(child.properties.textContent))
+  }
 
   return Vird.createNode(type, properties, children)
 }

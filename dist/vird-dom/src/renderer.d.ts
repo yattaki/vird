@@ -1,4 +1,5 @@
 import { VirdNode } from '../../vird/index';
+export declare type RenderItem = VirdNode | ((node: Node) => VirdNode);
 export declare type PropertyValueMap = {
     newValue?: string;
     oldValue?: string;
@@ -18,8 +19,9 @@ export declare class Renderer {
     fragmentType: string;
     constructor();
     private _updateNode;
-    render(node: Node, ...renderItems: (VirdNode | ((node: Node) => VirdNode))[]): VirdNode[];
-    renderDom(node: Node): VirdNode[];
+    render(node: Node, ...renderItems: RenderItem[]): VirdNode[];
+    renderDom(node: Node, trim?: boolean): VirdNode[];
+    reRender(node: Node): void;
     createDispatcher(node: Node): (beforeCallback?: (() => void | Promise<void>) | undefined) => Promise<void>;
     createEffect<T = any>(node: Node, effect: (value?: T) => T | Promise<T>, initValue?: T): {
         value: T | undefined;
