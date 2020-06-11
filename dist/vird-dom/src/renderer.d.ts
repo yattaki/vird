@@ -1,11 +1,11 @@
 import { VirdNode } from '../../vird/index';
-export declare type VirdDomPropertyValueMap = {
+export declare type PropertyValueMap = {
     newValue?: string;
     oldValue?: string;
 };
-export declare type VirdDomPropertyTypeBinder = (node: Node, value: VirdDomPropertyValueMap) => void;
-export declare type VirdDomPropertyTypeRegExpBinder = (node: Node, matchArray: RegExpMatchArray, value: VirdDomPropertyValueMap) => string;
-export declare type VirdDomCustomNodeCreator = (virdNode: VirdNode) => Node;
+export declare type PropertyTypeBinder = (node: Node, value: PropertyValueMap) => void;
+export declare type PropertyTypeRegExpBinder = (node: Node, matchArray: RegExpMatchArray, value: PropertyValueMap) => string;
+export declare type CustomNodeCreator = (virdNode: VirdNode) => Node;
 export declare class Renderer {
     private readonly _renderMap;
     private readonly _oldVirdNodeMap;
@@ -30,10 +30,10 @@ export declare class Renderer {
     getNode(virdNode: VirdNode): Node | null;
     getVirdNode(node: Node): VirdNode | null;
     getChildrenVirdNode(node: Node): VirdNode[];
-    setCustomNode(type: string, creator: VirdDomCustomNodeCreator): this;
+    setCustomNode(type: string, creator: CustomNodeCreator): this;
     removeCustomNode(type: string): this;
-    setPropertyTypeRegExpBind(regExp: RegExp, binder: VirdDomPropertyTypeRegExpBinder): this;
+    setPropertyTypeRegExpBind(regExp: RegExp, binder: PropertyTypeRegExpBinder): this;
     removePropertyTypeRegExpBind(regExp: RegExp): this;
-    setPropertyTypeBind(type: string, binder: VirdDomPropertyTypeBinder): this;
+    setPropertyTypeBind(type: string, binder: PropertyTypeBinder): this;
     removePropertyTypeBind(type: string): this;
 }

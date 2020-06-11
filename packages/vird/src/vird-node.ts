@@ -1,5 +1,5 @@
 export interface VirdNode {
   type: string,
-  readonly properties: { [key: string]: string },
-  readonly children: VirdNode[]
+  properties: { [key: string]: string },
+  children: VirdNode[]
 }

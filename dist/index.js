@@ -78,7 +78,7 @@ function __awaiter(thisArg, _arguments, P, generator) {
     });
 }
 
-const diff = (checkObject, comparisonObjet) => {
+function diff(checkObject, comparisonObjet) {
     const diffObject = {};
     if (checkObject !== comparisonObjet) {
         if (checkObject) {
@@ -112,7 +112,7 @@ const diff = (checkObject, comparisonObjet) => {
         }
     }
     return diffObject;
-};
+}
 
 function clearFragmentNode(virdNodes, key = '#document-fragment') {
     const result = [];

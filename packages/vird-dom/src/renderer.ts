@@ -3,20 +3,20 @@ import { createNode } from './create-node'
 import { diff } from './diff'
 import { clearFragmentNode } from './clear-fragment-node'
 
-export type VirdDomPropertyValueMap = { newValue?: string, oldValue?: string }
-export type VirdDomPropertyTypeBinder = (node: Node, value: VirdDomPropertyValueMap) => void
-export type VirdDomPropertyTypeRegExpBinder = (node: Node, matchArray: RegExpMatchArray, value: VirdDomPropertyValueMap) => string
-export type VirdDomCustomNodeCreator = (virdNode: VirdNode) => Node
+export type PropertyValueMap = { newValue?: string, oldValue?: string }
+export type PropertyTypeBinder = (node: Node, value: PropertyValueMap) => void
+export type PropertyTypeRegExpBinder = (node: Node, matchArray: RegExpMatchArray, value: PropertyValueMap) => string
+export type CustomNodeCreator = (virdNode: VirdNode) => Node
 
 export class Renderer {
   private readonly _renderMap: WeakMap<Node, (VirdNode | ((node: Node) => VirdNode))[]> = new Map()
   private readonly _oldVirdNodeMap: WeakMap<Node, VirdNode[]> = new Map()
   private readonly _nodeMap: WeakMap<VirdNode, Node> = new WeakMap()
   private readonly _virdNodeMap: WeakMap<Node, VirdNode> = new WeakMap()
-  private readonly _nodeCreatorMap: WeakMap<Node, VirdDomCustomNodeCreator> = new WeakMap()
-  private _propertyTypeBinderMap: Map<string, VirdDomPropertyTypeBinder> = new Map()
-  private _propertyTypeRegExpBinderMap: Map<RegExp, VirdDomPropertyTypeRegExpBinder> = new Map()
-  private _customNodeCreatorMap: Map<string, VirdDomCustomNodeCreator> = new Map()
+  private readonly _nodeCreatorMap: WeakMap<Node, CustomNodeCreator> = new WeakMap()
+  private _propertyTypeBinderMap: Map<string, PropertyTypeBinder> = new Map()
+  private _propertyTypeRegExpBinderMap: Map<RegExp, PropertyTypeRegExpBinder> = new Map()
+  private _customNodeCreatorMap: Map<string, CustomNodeCreator> = new Map()
   fragmentType = '#document-fragment'
 
   constructor () {
@@ -177,7 +177,7 @@ export class Renderer {
     return this._oldVirdNodeMap.get(node) || []
   }
 
-  setCustomNode (type: string, creator: VirdDomCustomNodeCreator) {
+  setCustomNode (type: string, creator: CustomNodeCreator) {
     this._customNodeCreatorMap.set(type, creator)
 
     return this
@@ -189,7 +189,7 @@ export class Renderer {
     return this
   }
 
-  setPropertyTypeRegExpBind (regExp: RegExp, binder: VirdDomPropertyTypeRegExpBinder) {
+  setPropertyTypeRegExpBind (regExp: RegExp, binder: PropertyTypeRegExpBinder) {
     this.removePropertyTypeRegExpBind(regExp)
     this._propertyTypeRegExpBinderMap.set(regExp, binder)
 
@@ -207,7 +207,7 @@ export class Renderer {
     return this
   }
 
-  setPropertyTypeBind (type: string, binder: VirdDomPropertyTypeBinder) {
+  setPropertyTypeBind (type: string, binder: PropertyTypeBinder) {
     this._propertyTypeBinderMap.set(type, binder)
 
     return this

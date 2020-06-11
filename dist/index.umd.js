@@ -84,7 +84,7 @@
         });
     }
 
-    const diff = (checkObject, comparisonObjet) => {
+    function diff(checkObject, comparisonObjet) {
         const diffObject = {};
         if (checkObject !== comparisonObjet) {
             if (checkObject) {
@@ -118,7 +118,7 @@
             }
         }
         return diffObject;
-    };
+    }
 
     function clearFragmentNode(virdNodes, key = '#document-fragment') {
         const result = [];

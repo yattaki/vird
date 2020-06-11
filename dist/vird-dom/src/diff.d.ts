@@ -1,3 +1,3 @@
-export declare const diff: <T = {
+export declare function diff<T = {
     [key: string]: any;
-}>(checkObject?: T | undefined, comparisonObjet?: T | undefined) => { [K in keyof T]: [T[K] | undefined, T[K] | undefined]; };
+}>(checkObject?: T, comparisonObjet?: T): { [K in keyof T]: [T[K] | undefined, T[K] | undefined]; };
