@@ -1,7 +1,7 @@
 .vscode
 example
 node_modules
-packages
+/packages
 .eslintignore
 .eslintrc.json
 .gitignore

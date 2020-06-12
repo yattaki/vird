@@ -30,30 +30,32 @@ function createNode(type, properties, children) {
     return { type, properties, children: createChildren };
 }
 
-var index = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    createText: createText,
-    createFragment: createFragment,
-    createNode: createNode,
-    createComment: createComment
-});
-
-function createNode$1(node, trim = false) {
-    const type = node.nodeName.toLocaleLowerCase();
-    const properties = {};
-    if (node instanceof Element) {
-        for (const { name, value } of node.attributes) {
-            properties[name] = value;
+function createNode$1(nodeOrType, propertiesOrTrim = false, children) {
+    if (typeof nodeOrType === 'string') {
+        if (typeof propertiesOrTrim === 'boolean') {
+            propertiesOrTrim = {};
         }
+        return createNode(nodeOrType, propertiesOrTrim, children);
     }
     else {
-        properties.textContent = node.textContent || '';
+        const node = nodeOrType;
+        const type = node.nodeName.toLocaleLowerCase();
+        const properties = {};
+        if (node instanceof Element) {
+            for (const { name, value } of node.attributes) {
+                properties[name] = value;
+            }
+        }
+        else {
+            properties.textContent = node.textContent || '';
+        }
+        const trim = !!propertiesOrTrim;
+        let children = [...node.childNodes].map(node => createNode$1(node, trim));
+        if (trim) {
+            children = children.filter(child => !['#text', '#comment'].includes(child.type) || !/^\s*$/.test(child.properties.textContent));
+        }
+        return createNode(type, properties, children);
     }
-    let children = [...node.childNodes].map(node => createNode$1(node, trim));
-    if (trim) {
-        children = children.filter(child => !['#text', '#comment'].includes(child.type) || !/^\s*$/.test(child.properties.textContent));
-    }
-    return createNode(type, properties, children);
 }
 
 function diff(checkObject, comparisonObjet) {
@@ -292,12 +294,5 @@ class Renderer {
 
 const renderer = new Renderer();
 
-var index$1 = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    Renderer: Renderer,
-    renderer: renderer,
-    createNode: createNode$1
-});
-
-export { index as Vird, index$1 as VirdDom };
+export { Renderer, createComment, createFragment, createNode$1 as createNode, createText, renderer };
 //# sourceMappingURL=index.js.map

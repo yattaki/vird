@@ -3,7 +3,8 @@ import {
   Renderer,
   PropertyTypeBinder,
   PropertyTypeRegExpBinder,
-  PropertyValueMap
+  PropertyValueMap,
+  CustomNodeCreator
 } from './src/renderer'
 
 const renderer = new Renderer()
@@ -13,6 +14,7 @@ export {
   PropertyTypeRegExpBinder,
   PropertyTypeBinder,
   PropertyValueMap,
+  CustomNodeCreator,
   renderer,
   createNode
 }

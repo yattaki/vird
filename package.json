@@ -1,6 +1,6 @@
 {
   "name": "vird",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Vird is a great virtual DOM library that can extend rendering.",
   "main": "dist/index.cjs.js",
   "jsdelivr": "dist/index.iife.js",
@@ -12,8 +12,10 @@
     "eslint": "eslint packages/index.ts",
     "rollup": "rollup -c",
     "dev": "npm run rollup -- -w",
-    "build": "npm run eslint && rimraf dist && npm run types && rollup -c",
-    "push": "git push && npm publish"
+    "remove-dist": "rimraf dist",
+    "build": "npm run eslint && npm run remove-dist && npm run types & npm run rollup",
+    "staging": "npm run build && git add .",
+    "push": "npm publish && git push"
   },
   "repository": {
     "type": "git",

@@ -1,4 +1,4 @@
 import { createNode } from './src/create-node';
-import { Renderer, PropertyTypeBinder, PropertyTypeRegExpBinder, PropertyValueMap } from './src/renderer';
+import { Renderer, PropertyTypeBinder, PropertyTypeRegExpBinder, PropertyValueMap, CustomNodeCreator } from './src/renderer';
 declare const renderer: Renderer;
-export { Renderer, PropertyTypeRegExpBinder, PropertyTypeBinder, PropertyValueMap, renderer, createNode };
+export { Renderer, PropertyTypeRegExpBinder, PropertyTypeBinder, PropertyValueMap, CustomNodeCreator, renderer, createNode };
