@@ -3,7 +3,7 @@ import {
   VirdNode
 } from '../../vird/index'
 
-export function createNode (node: Node, trim: boolean): VirdNode
+export function createNode (node: Node, trim?: boolean): VirdNode
 export function createNode (type: string, children: string | (string | VirdNode)[]): VirdNode
 export function createNode (type: string, properties: VirdNode['properties'], children?: string | (string | VirdNode)[]): VirdNode
 export function createNode (type: string, properties?: VirdNode['properties'] | string | (string | VirdNode)[], children?: string | (string | VirdNode)[]): VirdNode
