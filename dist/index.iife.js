@@ -7,6 +7,12 @@ var vird = (function (exports) {
         fragment: { value: '#document-fragment' }
     });
 
+    function cloneVirdNode(virdNode, deep = false) {
+        const type = virdNodeTypes.text;
+        const properties = Object.assign({}, virdNode.properties);
+        const children = deep ? virdNode.children.map(child => cloneVirdNode(child)) : [];
+        return { type, properties, children };
+    }
     function createText(text) {
         const type = virdNodeTypes.text;
         const properties = { textContent: text };
@@ -305,6 +311,7 @@ var vird = (function (exports) {
     const renderer = new Renderer();
 
     exports.Renderer = Renderer;
+    exports.cloneVirdNode = cloneVirdNode;
     exports.createComment = createComment;
     exports.createFragment = createFragment;
     exports.createNode = createNode;

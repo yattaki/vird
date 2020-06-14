@@ -1,5 +1,6 @@
 import { VirdNode, VirdNodeText, VirdNodeComment, VirdNodeFragment } from './vird-node';
 import { VirdNodeTypes } from './vird-node-types';
+export declare function cloneVirdNode<R extends VirdNode>(virdNode: R, deep?: boolean): R;
 export declare function createText(text: string): VirdNodeText;
 export declare function createComment(comment: string): VirdNodeComment;
 export declare function createFragment(...children: VirdNode[]): VirdNodeFragment;

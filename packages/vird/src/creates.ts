@@ -1,6 +1,14 @@
 import { VirdNode, VirdNodeText, VirdNodeComment, VirdNodeFragment } from './vird-node'
 import { virdNodeTypes, VirdNodeTypes } from './vird-node-types'
 
+export function cloneVirdNode <R extends VirdNode> (virdNode: R, deep = false): R {
+  const type = virdNodeTypes.text
+  const properties = { ...virdNode.properties }
+  const children = deep ? virdNode.children.map(child => cloneVirdNode(child)) : []
+
+  return { type, properties, children } as R
+}
+
 export function createText (text: string): VirdNodeText {
   const type = virdNodeTypes.text
   const properties = { textContent: text }
