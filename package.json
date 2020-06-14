@@ -13,7 +13,7 @@
     "rollup": "rollup -c",
     "dev": "npm run rollup -- -w",
     "remove-dist": "rimraf dist",
-    "build": "npm run eslint && npm run remove-dist && npm run types & npm run rollup",
+    "build": "npm run eslint && npm run remove-dist && npm run types && npm run rollup",
     "staging": "npm run build && git add .",
     "push": "npm publish && git push"
   },

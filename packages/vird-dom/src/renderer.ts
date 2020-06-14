@@ -224,3 +224,5 @@ export class Renderer {
     return this
   }
 }
+
+export const renderer = new Renderer()

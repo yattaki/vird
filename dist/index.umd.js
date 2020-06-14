@@ -4,25 +4,31 @@
     (global = global || self, factory(global.vird = {}));
 }(this, (function (exports) { 'use strict';
 
+    const virdNodeTypes = Object.defineProperties({}, {
+        text: { value: '#text' },
+        comment: { value: '#comment' },
+        fragment: { value: '#document-fragment' }
+    });
+
     function createText(text) {
-        const type = '#text';
+        const type = virdNodeTypes.text;
         const properties = { textContent: text };
         const children = [];
         return { type, properties, children };
     }
     function createComment(comment) {
-        const type = '#comment';
+        const type = virdNodeTypes.comment;
         const properties = { textContent: comment };
         const children = [];
         return { type, properties, children };
     }
     function createFragment(...children) {
-        const type = '#document-fragment';
+        const type = virdNodeTypes.fragment;
         const properties = {};
         return { type, properties, children };
     }
-    function createNode(type, properties, children) {
-        if (!properties || typeof properties === 'string' || Array.isArray(properties)) {
+    function createVirdNode(type, properties, children) {
+        if (typeof properties !== 'object' || Array.isArray(properties)) {
             children = properties;
             properties = {};
         }
@@ -36,12 +42,12 @@
         return { type, properties, children: createChildren };
     }
 
-    function createNode$1(nodeOrType, propertiesOrTrim = false, children) {
+    function createNode(nodeOrType, propertiesOrTrim = false, children) {
         if (typeof nodeOrType === 'string') {
             if (typeof propertiesOrTrim === 'boolean') {
                 propertiesOrTrim = {};
             }
-            return createNode(nodeOrType, propertiesOrTrim, children);
+            return createVirdNode(nodeOrType, propertiesOrTrim, children);
         }
         else {
             const node = nodeOrType;
@@ -56,11 +62,13 @@
                 properties.textContent = node.textContent || '';
             }
             const trim = !!propertiesOrTrim;
-            let children = [...node.childNodes].map(node => createNode$1(node, trim));
+            let children = [...node.childNodes].map(node => createNode(node, trim));
             if (trim) {
-                children = children.filter(child => !['#text', '#comment'].includes(child.type) || !/^\s*$/.test(child.properties.textContent));
+                const filter = (virdNode) => virdNode.type !== virdNodeTypes.comment &&
+                    (virdNode.type !== virdNodeTypes.text || !/^\s*$/.test(virdNode.properties.textContent));
+                children = children.filter(filter);
             }
-            return createNode(type, properties, children);
+            return createVirdNode(type, properties, children);
         }
     }
 
@@ -203,7 +211,7 @@
             return newVirdNodes;
         }
         renderDom(node, trim = false) {
-            const virdNodes = createNode$1(node, trim).children;
+            const virdNodes = createNode(node, trim).children;
             return this.render(node, ...virdNodes);
         }
         reRender(node) {
@@ -297,15 +305,16 @@
             return this;
         }
     }
-
     const renderer = new Renderer();
 
     exports.Renderer = Renderer;
     exports.createComment = createComment;
     exports.createFragment = createFragment;
-    exports.createNode = createNode$1;
+    exports.createNode = createNode;
     exports.createText = createText;
+    exports.createVirdNode = createVirdNode;
     exports.renderer = renderer;
+    exports.virdNodeTypes = virdNodeTypes;
 
     Object.defineProperty(exports, '__esModule', { value: true });
 

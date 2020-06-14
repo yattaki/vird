@@ -1,9 +1,17 @@
 import {
-  createNode as createVirdNode,
-  VirdNode
+  createVirdNode,
+  VirdNode,
+  VirdNodeTypes,
+  virdNodeTypes,
+  VirdNodeComment,
+  VirdNodeText,
+  VirdNodeFragment
 } from '../../vird/index'
 
 export function createNode (node: Node, trim?: boolean): VirdNode
+export function createNode (type: VirdNodeTypes['text'], properties?: VirdNodeText['properties']): VirdNodeText
+export function createNode (type: VirdNodeTypes['comment'], properties?: VirdNodeComment['properties']): VirdNodeComment
+export function createNode (type: VirdNodeTypes['fragment'], children?: string | (string | VirdNode)[]): VirdNodeFragment
 export function createNode (type: string, children: string | (string | VirdNode)[]): VirdNode
 export function createNode (type: string, properties: VirdNode['properties'], children?: string | (string | VirdNode)[]): VirdNode
 export function createNode (type: string, properties?: VirdNode['properties'] | string | (string | VirdNode)[], children?: string | (string | VirdNode)[]): VirdNode
@@ -30,7 +38,11 @@ export function createNode (
     const trim = !!propertiesOrTrim
     let children = [...node.childNodes].map(node => createNode(node, trim))
     if (trim) {
-      children = children.filter(child => !['#text', '#comment'].includes(child.type) || !/^\s*$/.test(child.properties.textContent))
+      const filter = (virdNode: VirdNode) =>
+        virdNode.type !== virdNodeTypes.comment &&
+        (virdNode.type !== virdNodeTypes.text || !/^\s*$/.test(virdNode.properties.textContent))
+
+      children = children.filter(filter)
     }
 
     return createVirdNode(type, properties, children)

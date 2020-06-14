@@ -39,3 +39,4 @@ export declare class Renderer {
     setPropertyTypeBind(type: string, binder: PropertyTypeBinder): this;
     removePropertyTypeBind(type: string): this;
 }
+export declare const renderer: Renderer;
