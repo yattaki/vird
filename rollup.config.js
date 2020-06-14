@@ -1,9 +1,11 @@
 import typescript from '@rollup/plugin-typescript'
+import resolve from '@rollup/plugin-node-resolve'
 import { terser } from 'rollup-plugin-terser'
 import { name } from './package.json'
 
 const plugins = [
-  typescript({ noEmitOnError: false })
+  typescript({ noEmitOnError: false }),
+  resolve()
 ]
 
 export default {

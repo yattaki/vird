@@ -42,6 +42,249 @@ function createVirdNode(type, properties, children) {
     return { type, properties, children: createChildren };
 }
 
+class EventHandler {
+    constructor() {
+        this._map = new Map();
+    }
+    /**
+     * Add a new listener.
+     * @param type This represents the name of the event.
+     * @param listener This represents the listener to add.
+     * @param options Specifies characteristics about the event listener.
+     */
+    addEventListener(type, listener, options = {}) {
+        let onMaps = this._map.get(type);
+        if (!onMaps) {
+            onMaps = [];
+            this._map.set(type, onMaps);
+        }
+        let isAdd = true;
+        for (const onMap of onMaps) {
+            if (onMap.listener === listener) {
+                onMap.options = options;
+                isAdd = false;
+                break;
+            }
+        }
+        if (isAdd) {
+            onMaps.push({ listener, options });
+        }
+        return isAdd;
+    }
+    /**
+     * Remove the listener.
+     * @param type This represents the name of the event.
+     * @param listener This represents the listener to remove.
+     */
+    removeEventListener(type, listener) {
+        const onMaps = this._map.get(type);
+        if (onMaps) {
+            let index = 0;
+            for (const onMap of onMaps) {
+                if (onMap.listener === listener) {
+                    onMaps.splice(index, 1);
+                    return true;
+                }
+                index++;
+            }
+        }
+        return false;
+    }
+    /**
+     * Execute the registered event.
+     * @param type This represents the name of the event.
+     * @param data An object to be passed as an argument of the listener.
+     */
+    async dispatchEvent(type, data = {}) {
+        const promises = [];
+        const onMaps = this._map.get(type);
+        if (onMaps) {
+            for (const { listener, options } of [...onMaps]) {
+                const event = {
+                    type,
+                    target: this,
+                    data: { ...(options.data || {}), ...data }
+                };
+                const promise = listener(event);
+                promises.push(promise);
+                if (options.once) {
+                    this.removeEventListener(type, listener);
+                }
+                if (options.wait) {
+                    await promise;
+                }
+            }
+        }
+        await Promise.all(promises);
+    }
+}
+
+class VirdElement extends EventHandler {
+    constructor(virdNode) {
+        super();
+        this._parent = null;
+        this.state = {};
+        this.virdNode = virdNode;
+        this._children = virdNode.children.map((child) => new VirdElement(child));
+        this.addEventListener('mount', (e) => {
+            for (const child of this.children) {
+                child.dispatchEvent('unmount', { parent: e.data.parent });
+            }
+        });
+        this.addEventListener('unmount', (e) => {
+            for (const child of this.children) {
+                child.dispatchEvent('unmount', { parent: e.data.parent });
+            }
+        });
+    }
+    insertAfter(beforeChild, ...children) {
+        const newChildren = this.children;
+        let index;
+        if (beforeChild) {
+            index = newChildren.indexOf(beforeChild) + 1;
+            if (index < 1) {
+                throw Error('The VirdElement before which the new VirdElement is to be inserted is not a child of this VirdElement.');
+            }
+        }
+        else {
+            index = newChildren.length;
+        }
+        newChildren.splice(index, 0, ...children);
+        this.setChildren(newChildren);
+        this.dispatchEvent('insert-children', { children, index });
+        return this;
+    }
+    insertBefore(afterChild, ...children) {
+        return this.insertAfter(afterChild ? afterChild.prev : this.firstChild, ...children);
+    }
+    appendChild(...children) {
+        return this.insertAfter(null, ...children);
+    }
+    removeChild(...children) {
+        const newChildren = this.children;
+        for (const child of children) {
+            if (!newChildren.includes(child)) {
+                throw Error('The VirdElement to be removed is not a child of this VirdElement.');
+            }
+        }
+        this.setChildren(newChildren.filter((child) => !children.includes(child)));
+        this.dispatchEvent('remove-children', { children });
+        return this;
+    }
+    remove() {
+        const parent = this.parent;
+        if (parent) {
+            parent.removeChild(this);
+        }
+        return this;
+    }
+    clearChildren() {
+        this.setChildren([]);
+        return this;
+    }
+    setChildren(children) {
+        const beforeChildren = this.children;
+        this._children = children;
+        this.virdNode.children = this.children.map((child) => child.virdNode);
+        for (const child of beforeChildren) {
+            if (children.includes(child)) {
+                continue;
+            }
+            child._parent = null;
+            this.dispatchEvent('unmount', { parent: this });
+        }
+        for (const child of children) {
+            if (beforeChildren.includes(child)) {
+                continue;
+            }
+            child._parent = this;
+            this.dispatchEvent('mount', { parent: this });
+        }
+        this.update();
+        return beforeChildren;
+    }
+    clone(deep = false) {
+        const virdNode = cloneVirdNode(this.virdNode, deep);
+        const virdElement = new VirdElement(virdNode);
+        virdElement.setState(this.state, false);
+        return virdElement;
+    }
+    getVirdElements(getter, includeThis = false) {
+        const hitVirdElements = [];
+        if (includeThis && getter(this)) {
+            hitVirdElements.push(this);
+        }
+        for (const child of this.children) {
+            if (getter(child)) {
+                hitVirdElements.push(child);
+            }
+        }
+        return hitVirdElements;
+    }
+    update() {
+        this.dispatchEvent('update');
+    }
+    setState(state, update = true) {
+        const beforeState = this.state;
+        for (const key of Object.keys(state)) {
+            if (this.state[key] === state[key]) {
+                continue;
+            }
+            this.state = Object.assign(Object.assign({}, this.state), state);
+            break;
+        }
+        if (update && beforeState !== this.state) {
+            this.update();
+        }
+    }
+    get parent() {
+        return this._parent;
+    }
+    get children() {
+        return [...this._children];
+    }
+    set children(value) {
+        this.setChildren(value);
+    }
+    get firstChild() {
+        return (this.children[0] || null);
+    }
+    get lastChild() {
+        const children = this.children;
+        return (children[children.length - 1] || null);
+    }
+    get next() {
+        const parent = this.parent;
+        if (!parent) {
+            return null;
+        }
+        const children = parent.children;
+        return children[children.indexOf(this) + 1] || null;
+    }
+    get prev() {
+        const parent = this.parent;
+        if (!parent) {
+            return null;
+        }
+        const children = parent.children;
+        return children[children.indexOf(this) - 1] || null;
+    }
+    get type() {
+        return this.virdNode.type;
+    }
+    set type(value) {
+        this.virdNode.type = value;
+        this.update();
+    }
+    get properties() {
+        return Object.assign({}, this.virdNode.properties);
+    }
+    set properties(value) {
+        this.virdNode.properties = value;
+        this.update();
+    }
+}
+
 function createNode(nodeOrType, propertiesOrTrim = false, children) {
     if (typeof nodeOrType === 'string') {
         if (typeof propertiesOrTrim === 'boolean') {
@@ -307,5 +550,5 @@ class Renderer {
 }
 const renderer = new Renderer();
 
-export { Renderer, cloneVirdNode, createComment, createFragment, createNode, createText, createVirdNode, renderer, virdNodeTypes };
+export { Renderer, VirdElement, cloneVirdNode, createComment, createFragment, createNode, createText, createVirdNode, renderer, virdNodeTypes };
 //# sourceMappingURL=index.js.map
