@@ -9,7 +9,7 @@ const virdNodeTypes = Object.defineProperties({}, {
 });
 
 function cloneVirdNode(virdNode, deep = false) {
-    const type = virdNodeTypes.text;
+    const type = virdNode.type;
     const properties = Object.assign({}, virdNode.properties);
     const children = deep ? virdNode.children.map(child => cloneVirdNode(child)) : [];
     return { type, properties, children };
@@ -242,6 +242,19 @@ class VirdElement extends EventHandler {
     }
     update() {
         this.dispatchEvent('update');
+    }
+    setProperties(properties, update = true) {
+        const beforeProperties = this.virdNode.properties;
+        for (const key of Object.keys(properties)) {
+            if (this.state[key] === beforeProperties[key]) {
+                continue;
+            }
+            this.virdNode.properties = Object.assign(Object.assign({}, this.virdNode.properties), properties);
+            break;
+        }
+        if (update && beforeProperties !== this.virdNode.properties) {
+            this.update();
+        }
     }
     setState(state, update = true) {
         const beforeState = this._state;

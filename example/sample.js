@@ -24,6 +24,15 @@ import * as vird from '../dist/index.js'
 
   await pause(timer)
 
+  console.log('debug:', 'test')
+  const virdElements2 = [
+    vird.createElement('div', 'Multiple elements render.'),
+    vird.createElement('div', { style: 'color: #00d7d7' }, 'Vird is very easy !')
+  ]
+  vird.renderer.render(document.body, ...virdElements2)
+
+  await pause(timer * 100)
+
   // Example 03 Automatic re render.
   const replaceVirdElement = vird.createElement('div', { textContent: '{ text : Before Text. }' })
   vird.renderer.render(document.body, replaceVirdElement)

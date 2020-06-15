@@ -43,6 +43,7 @@ export declare class VirdElement<T extends {
         [key: string]: any;
     }>[];
     update(): void;
+    setProperties(properties: VirdNode['properties'], update?: boolean): void;
     setState(state: T, update?: boolean): void;
     getParentState(deep?: boolean): {
         [key: string]: any;

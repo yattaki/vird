@@ -162,6 +162,18 @@ export class VirdElement<T extends { [key: string]: any } = { [key: string]: any
     this.dispatchEvent('update')
   }
 
+  setProperties (properties: VirdNode['properties'], update = true) {
+    const beforeProperties = this.virdNode.properties
+    for (const key of Object.keys(properties)) {
+      if (this.state[key] === beforeProperties[key]) { continue }
+
+      this.virdNode.properties = { ...this.virdNode.properties, ...properties }
+      break
+    }
+
+    if (update && beforeProperties !== this.virdNode.properties) { this.update() }
+  }
+
   setState (state: T, update = true) {
     const beforeState = this._state
     for (const key of Object.keys(state)) {
