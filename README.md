@@ -7,6 +7,8 @@
 ![npm license](https://img.shields.io/npm/l/vird)
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
+![vird-icon](./vird-icon.svg)
+
 Vird is a great virtual DOM library that can extend rendering.
 
 ## Installation
