@@ -133,8 +133,10 @@ class VirdElement extends EventHandler {
         this._children = [];
         this._state = {};
         this.acceptParentState = false;
-        this.virdNode = virdNode;
-        this.setChildren(virdNode.children.map((child) => new VirdElement(child)));
+        this.virdNode = virdNode instanceof VirdElement ? virdNode.virdNode : virdNode;
+        this.setChildren(virdNode.children.map((child) => child instanceof VirdElement
+            ? child
+            : new VirdElement(child)));
         this.addEventListener('mount', (e) => {
             for (const child of this.children) {
                 child.dispatchEvent('unmount', { parent: e.data.parent });

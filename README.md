@@ -63,6 +63,7 @@ vird.renderer.render(document.body, ...virdElements)
 ### Example 03 Automatic re render.
 
 ```typescript
+// Example 03 Automatic re render.
 const replaceVirdElement = vird.createElement('div', { textContent: '{ text : Before Text. }' })
 vird.renderer.render(document.body, replaceVirdElement)
 

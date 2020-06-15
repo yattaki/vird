@@ -23,8 +23,12 @@ export class VirdElement<T extends { [key: string]: any } = { [key: string]: any
   constructor (virdNode: VirdNode) {
     super()
 
-    this.virdNode = virdNode
-    this.setChildren(virdNode.children.map((child) => new VirdElement(child)))
+    this.virdNode = virdNode instanceof VirdElement ? virdNode.virdNode : virdNode
+    this.setChildren(virdNode.children.map((child) =>
+      child instanceof VirdElement
+        ? child
+        : new VirdElement(child))
+    )
 
     this.addEventListener('mount', (e) => {
       for (const child of this.children) {
