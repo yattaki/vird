@@ -7,7 +7,9 @@
 ![npm license](https://img.shields.io/npm/l/vird)
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
-![vird-icon](./vird-icon.svg)
+<p align="center">
+  <img width="100" src="./vird-icon.svg" alt="vird logo">
+</p>
 
 Vird is a great virtual DOM library that can extend rendering.
 
@@ -19,7 +21,7 @@ Read from [CDN](https://cdn.jsdelivr.net/npm/vird/dist/index.iife.min.js).
 <script src="https://cdn.jsdelivr.net/npm/vird/dist/index.iife.min.js"></script>
 ```
 
-Install from [npm](https://www.npmjs.com/package/vird).
+Install from [NPM](https://www.npmjs.com/package/vird).
 
 ```bash
 npm i vird
@@ -39,91 +41,55 @@ const vird = required('vird')
 
 ## Examples
 
-### Example 01
-
-Rendering sample.
+### Example 01 Element render.
 
 ```typescript
-const virdNode = vird.Vird.createNode('div', 'Hallo World!!')
-const renderedVElements = vird.VirdDom.renderer.render(document.body, virdNode)
+// Example 01 Element render.
+const helloVirdElement = vird.createElement('div', 'Hallo World !')
+vird.renderer.render(document.body, helloVirdElement)
 ```
 
-### Example 02
-
-Re-rendering sample.
+### Example 02 Multiple elements render.
 
 ```typescript
-const virdNodes = [
-  ...renderedVElements,
-  vird.Vird.createNode('div', 'Vird is very easy!!')
+// Example 02 Multiple elements render.
+const virdElements = [
+  vird.createElement('div', 'Multiple elements render.'),
+  vird.createElement('div', { style: 'color: #00d7d7' }, 'Vird is very easy !')
 ]
-vird.VirdDom.renderer.render(document.body, ...virdNodes)
+vird.renderer.render(document.body, ...virdElements)
 ```
 
-### Example 03
+### Example 03 Automatic re render.
 
-HTMLTemplateElement rendering sample.
+```typescript
+const replaceVirdElement = vird.createElement('div', { textContent: '{ text : Before Text. }' })
+vird.renderer.render(document.body, replaceVirdElement)
+
+setTimeout(() => {
+  replaceVirdElement.setState({ text: 'After Text.' }) // re rendering.
+}, 1000)
+```
+
+### Example 04 TemplateElement render.
 
 ```HTML
 <template id="template">
   <div>Template sample.</div>
-  <div>Template sample.</div>
-  <div>Template sample.</div>
+  <div>{ text }</div>
 </template>
 ```
 
 ```typescript
+// Example 04 TemplateElement render.
 const templateElement = document.getElementById('template')
+
 const cloneElement = document.importNode(templateElement.content, true)
-const virdNode = vird.VirdDom.createNode(cloneElement)
+const templateVirdElement = vird.createElement(cloneElement, true)
+templateVirdElement.setState({ text: 'Data binding.' })
+templateVirdElement.setAcceptParentStateOfChildren(true) // Child element accepts parent state.
 
-vird.VirdDom.renderer.render(document.body, virdNode)
-```
-
-### Example 04
-
-Effect rendering sample.
-
-```typescript
-const effect = vird.VirdDom.renderer.createEffect(document.body, (value) => value, 'Before text.')
-const render = () => vird.Vird.createFragment(
-  vird.Vird.createNode('div', 'Effect rendering sample.'),
-  vird.Vird.createNode('div', effect.value)
-)
-
-vird.VirdDom.renderer.render(document.body, render)
-
-setTimeout(() => { effect.setEffect('After text.') }, 1000)
-```
-
-### Example 05
-
-Component rendering sample.
-
-```typescript
-class Component {
-  constructor () {
-    this.effect = vird.VirdDom.renderer.createDispatcher(document.body)
-    this.state = { count: 0 }
-  }
-
-  setState (state) {
-    this.state = { ...this.state, ...state }
-    this.effect()
-  }
-
-  render () {
-    return () => vird.Vird.createFragment(
-      vird.Vird.createNode('div', 'Component rendering sample.'),
-      vird.Vird.createNode('div', `Count ${this.state.count}.`)
-    )
-  }
-}
-
-const component = new Component()
-vird.VirdDom.renderer.render(document.body, component.render())
-
-setInterval(() => { component.setState({ count: component.state.count + 1 }) }, 1000)
+vird.renderer.render(document.body, templateVirdElement)
 ```
 
 ## License

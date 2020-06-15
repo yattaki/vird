@@ -1,5 +1,6 @@
-import { VirdNode } from '../../index'
-import { cloneVirdNode } from './creates'
+import { VirdNode } from './vird-node'
+import { cloneVirdNode } from './vird-node-creators'
+import { config } from './config'
 import EventHandler, { EventHandlerDataMap } from '@yattaki/event-handler'
 
 export interface VirdElementEventMap extends EventHandlerDataMap {
@@ -14,15 +15,16 @@ export class VirdElement<T extends { [key: string]: any } = { [key: string]: any
   readonly virdNode: VirdNode
 
   private _parent: VirdElement | null = null
-  private _children: VirdElement[]
+  private _children: VirdElement[] = []
+  private _state: T = {} as T
 
-  state: T = {} as T
+  acceptParentState = false
 
   constructor (virdNode: VirdNode) {
     super()
 
     this.virdNode = virdNode
-    this._children = virdNode.children.map((child) => new VirdElement(child))
+    this.setChildren(virdNode.children.map((child) => new VirdElement(child)))
 
     this.addEventListener('mount', (e) => {
       for (const child of this.children) {
@@ -152,15 +154,42 @@ export class VirdElement<T extends { [key: string]: any } = { [key: string]: any
   }
 
   setState (state: T, update = true) {
-    const beforeState = this.state
+    const beforeState = this._state
     for (const key of Object.keys(state)) {
       if (this.state[key] === state[key]) { continue }
 
-      this.state = { ...this.state, ...state }
+      this._state = { ...this.state, ...state }
       break
     }
 
-    if (update && beforeState !== this.state) { this.update() }
+    if (update && beforeState !== this._state) { this.update() }
+  }
+
+  getParentState (deep = true) {
+    const parentStates: VirdElement['state'][] = [this.state]
+    const pushParentState = (virdElement: VirdElement | null) => {
+      if (!virdElement) { return }
+
+      parentStates.push(virdElement.state)
+
+      if (!deep || !virdElement.acceptParentState) { return }
+      pushParentState(virdElement.parent)
+    }
+
+    pushParentState(this.parent)
+
+    let catchState: VirdElement['state'] = {}
+    for (const parentState of parentStates) {
+      catchState = { ...parentState, ...catchState }
+    }
+    return catchState
+  }
+
+  setAcceptParentStateOfChildren (bool: boolean) {
+    for (const child of this.children) {
+      child.acceptParentState = bool
+      child.setAcceptParentStateOfChildren(bool)
+    }
   }
 
   get parent () {
@@ -204,6 +233,14 @@ export class VirdElement<T extends { [key: string]: any } = { [key: string]: any
     return children[children.indexOf(this) - 1] || null
   }
 
+  get state () {
+    return this._state
+  }
+
+  set state (value) {
+    this._state = value
+  }
+
   get type () {
     return this.virdNode.type
   }
@@ -214,7 +251,25 @@ export class VirdElement<T extends { [key: string]: any } = { [key: string]: any
   }
 
   get properties () {
-    return { ...this.virdNode.properties }
+    let resultProperties: VirdNode['properties'] = {}
+    const properties = { ...this.virdNode.properties }
+    if (config.binding) {
+      const mergeState = this.getParentState()
+
+      const replacer = (_: string, key: string, defaultValue = '') =>
+        key in mergeState
+          ? String(mergeState[key])
+          : defaultValue
+
+      for (const key of Object.keys(properties)) {
+        const value = properties[key]
+        resultProperties[key] = value.replace(config.binding, replacer)
+      }
+    } else {
+      resultProperties = properties
+    }
+
+    return resultProperties
   }
 
   set properties (value) {

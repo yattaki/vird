@@ -1,4 +1,4 @@
-import { VirdNode } from '../../index';
+import { VirdNode } from './vird-node';
 import EventHandler, { EventHandlerDataMap } from '@yattaki/event-handler';
 export interface VirdElementEventMap extends EventHandlerDataMap {
     mount: {
@@ -24,7 +24,8 @@ export declare class VirdElement<T extends {
     readonly virdNode: VirdNode;
     private _parent;
     private _children;
-    state: T;
+    private _state;
+    acceptParentState: boolean;
     constructor(virdNode: VirdNode);
     insertAfter(beforeChild: VirdElement | null, ...children: VirdElement[]): this;
     insertBefore(afterChild: VirdElement | null, ...children: VirdElement[]): this;
@@ -43,6 +44,10 @@ export declare class VirdElement<T extends {
     }>[];
     update(): void;
     setState(state: T, update?: boolean): void;
+    getParentState(deep?: boolean): {
+        [key: string]: any;
+    };
+    setAcceptParentStateOfChildren(bool: boolean): void;
     get parent(): VirdElement<{
         [key: string]: any;
     }> | null;
@@ -64,12 +69,14 @@ export declare class VirdElement<T extends {
     get prev(): VirdElement<{
         [key: string]: any;
     }> | null;
+    get state(): T;
+    set state(value: T);
     get type(): string;
     set type(value: string);
     get properties(): {
-        [x: string]: string;
+        [key: string]: string;
     };
     set properties(value: {
-        [x: string]: string;
+        [key: string]: string;
     });
 }

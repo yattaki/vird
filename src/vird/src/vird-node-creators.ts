@@ -1,7 +1,7 @@
 import { VirdNode, VirdNodeText, VirdNodeComment, VirdNodeFragment } from './vird-node'
 import { virdNodeTypes, VirdNodeTypes } from './vird-node-types'
 
-export function cloneVirdNode <R extends VirdNode> (virdNode: R, deep = false): R {
+export function cloneVirdNode<R extends VirdNode> (virdNode: R, deep = false): R {
   const type = virdNodeTypes.text
   const properties = { ...virdNode.properties }
   const children = deep ? virdNode.children.map(child => cloneVirdNode(child)) : []
@@ -9,7 +9,7 @@ export function cloneVirdNode <R extends VirdNode> (virdNode: R, deep = false): 
   return { type, properties, children } as R
 }
 
-export function createText (text: string): VirdNodeText {
+export function createVirdText (text = ''): VirdNodeText {
   const type = virdNodeTypes.text
   const properties = { textContent: text }
   const children: never[] = []
@@ -17,7 +17,7 @@ export function createText (text: string): VirdNodeText {
   return { type, properties, children }
 }
 
-export function createComment (comment: string): VirdNodeComment {
+export function createVirdComment (comment = ''): VirdNodeComment {
   const type = virdNodeTypes.comment
   const properties = { textContent: comment }
   const children: never[] = []
@@ -25,7 +25,7 @@ export function createComment (comment: string): VirdNodeComment {
   return { type, properties, children }
 }
 
-export function createFragment (...children: VirdNode[]): VirdNodeFragment {
+export function createVirdFragment (...children: VirdNode[]): VirdNodeFragment {
   const type = virdNodeTypes.fragment
   const properties = {}
 
@@ -44,13 +44,14 @@ export function createVirdNode (type: string, properties?: VirdNode['properties'
     properties = {}
   }
 
+  let addChildren: VirdNode[]
   if (typeof children === 'string') {
-    children = [children]
-  } else if (!Array.isArray(children)) {
-    children = []
+    addChildren = [createVirdText(children)]
+  } else if (Array.isArray(children)) {
+    addChildren = children.map(child => typeof child === 'string' ? createVirdText(child) : child)
+  } else {
+    addChildren = []
   }
 
-  const createChildren = children.map(child => typeof child === 'string' ? createText(child) : child)
-
-  return { type, properties, children: createChildren }
+  return { type, properties, children: addChildren }
 }

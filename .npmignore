@@ -1,9 +1,11 @@
 .vscode
-example
+.DS_Store
 node_modules
-/packages
+/example
+/src
 .eslintignore
 .eslintrc.json
 .gitignore
 .npmignore
+.tsconfig.json
 rollup.config.js

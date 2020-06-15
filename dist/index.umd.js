@@ -16,19 +16,19 @@
         const children = deep ? virdNode.children.map(child => cloneVirdNode(child)) : [];
         return { type, properties, children };
     }
-    function createText(text) {
+    function createVirdText(text = '') {
         const type = virdNodeTypes.text;
         const properties = { textContent: text };
         const children = [];
         return { type, properties, children };
     }
-    function createComment(comment) {
+    function createVirdComment(comment = '') {
         const type = virdNodeTypes.comment;
         const properties = { textContent: comment };
         const children = [];
         return { type, properties, children };
     }
-    function createFragment(...children) {
+    function createVirdFragment(...children) {
         const type = virdNodeTypes.fragment;
         const properties = {};
         return { type, properties, children };
@@ -38,15 +38,22 @@
             children = properties;
             properties = {};
         }
+        let addChildren;
         if (typeof children === 'string') {
-            children = [children];
+            addChildren = [createVirdText(children)];
         }
-        else if (!Array.isArray(children)) {
-            children = [];
+        else if (Array.isArray(children)) {
+            addChildren = children.map(child => typeof child === 'string' ? createVirdText(child) : child);
         }
-        const createChildren = children.map(child => typeof child === 'string' ? createText(child) : child);
-        return { type, properties, children: createChildren };
+        else {
+            addChildren = [];
+        }
+        return { type, properties, children: addChildren };
     }
+
+    const config = {
+        binding: /{\s*([^\s:}]+)(?:\s*:\s*((?:[^\s}]|\s+[^}])*))?\s*}/
+    };
 
     class EventHandler {
         constructor() {
@@ -129,9 +136,11 @@
         constructor(virdNode) {
             super();
             this._parent = null;
-            this.state = {};
+            this._children = [];
+            this._state = {};
+            this.acceptParentState = false;
             this.virdNode = virdNode;
-            this._children = virdNode.children.map((child) => new VirdElement(child));
+            this.setChildren(virdNode.children.map((child) => new VirdElement(child)));
             this.addEventListener('mount', (e) => {
                 for (const child of this.children) {
                     child.dispatchEvent('unmount', { parent: e.data.parent });
@@ -231,16 +240,41 @@
             this.dispatchEvent('update');
         }
         setState(state, update = true) {
-            const beforeState = this.state;
+            const beforeState = this._state;
             for (const key of Object.keys(state)) {
                 if (this.state[key] === state[key]) {
                     continue;
                 }
-                this.state = Object.assign(Object.assign({}, this.state), state);
+                this._state = Object.assign(Object.assign({}, this.state), state);
                 break;
             }
-            if (update && beforeState !== this.state) {
+            if (update && beforeState !== this._state) {
                 this.update();
+            }
+        }
+        getParentState(deep = true) {
+            const parentStates = [this.state];
+            const pushParentState = (virdElement) => {
+                if (!virdElement) {
+                    return;
+                }
+                parentStates.push(virdElement.state);
+                if (!deep || !virdElement.acceptParentState) {
+                    return;
+                }
+                pushParentState(virdElement.parent);
+            };
+            pushParentState(this.parent);
+            let catchState = {};
+            for (const parentState of parentStates) {
+                catchState = Object.assign(Object.assign({}, parentState), catchState);
+            }
+            return catchState;
+        }
+        setAcceptParentStateOfChildren(bool) {
+            for (const child of this.children) {
+                child.acceptParentState = bool;
+                child.setAcceptParentStateOfChildren(bool);
             }
         }
         get parent() {
@@ -275,6 +309,12 @@
             const children = parent.children;
             return children[children.indexOf(this) - 1] || null;
         }
+        get state() {
+            return this._state;
+        }
+        set state(value) {
+            this._state = value;
+        }
         get type() {
             return this.virdNode.type;
         }
@@ -283,7 +323,22 @@
             this.update();
         }
         get properties() {
-            return Object.assign({}, this.virdNode.properties);
+            let resultProperties = {};
+            const properties = Object.assign({}, this.virdNode.properties);
+            if (config.binding) {
+                const mergeState = this.getParentState();
+                const replacer = (_, key, defaultValue = '') => key in mergeState
+                    ? String(mergeState[key])
+                    : defaultValue;
+                for (const key of Object.keys(properties)) {
+                    const value = properties[key];
+                    resultProperties[key] = value.replace(config.binding, replacer);
+                }
+            }
+            else {
+                resultProperties = properties;
+            }
+            return resultProperties;
         }
         set properties(value) {
             this.virdNode.properties = value;
@@ -307,7 +362,7 @@
                     properties[name] = value;
                 }
             }
-            else {
+            else if (!(node instanceof DocumentFragment)) {
                 properties.textContent = node.textContent || '';
             }
             const trim = !!propertiesOrTrim;
@@ -319,6 +374,10 @@
             }
             return createVirdNode(type, properties, children);
         }
+    }
+    function createElement(nodeOrType, propertiesOrTrim, children) {
+        const virdNode = createNode(nodeOrType, propertiesOrTrim, children);
+        return new VirdElement(virdNode);
     }
 
     function diff(checkObject, comparisonObjet) {
@@ -357,10 +416,10 @@
         return diffObject;
     }
 
-    function clearFragmentNode(virdNodes, key = '#document-fragment') {
+    function clearFragmentNode(virdNodes) {
         const result = [];
         for (const virdNode of virdNodes) {
-            if (virdNode.type === key) {
+            if (virdNode.type === virdNodeTypes.fragment) {
                 const children = clearFragmentNode(virdNode.children);
                 result.push(...children);
             }
@@ -376,15 +435,13 @@
             this._renderMap = new Map();
             this._oldVirdNodeMap = new Map();
             this._nodeMap = new WeakMap();
-            this._virdNodeMap = new WeakMap();
             this._nodeCreatorMap = new WeakMap();
             this._propertyTypeBinderMap = new Map();
             this._propertyTypeRegExpBinderMap = new Map();
             this._customNodeCreatorMap = new Map();
-            this.fragmentType = '#document-fragment';
-            this.setCustomNode('#text', () => document.createTextNode(''));
-            this.setCustomNode('#comment', () => document.createComment(''));
-            this.setCustomNode('#cdata-section', () => document.createCDATASection(''));
+            this.setCustomNode(virdNodeTypes.text, () => document.createTextNode(''));
+            this.setCustomNode(virdNodeTypes.comment, () => document.createComment(''));
+            this.setCustomNode(virdNodeTypes.fragment, () => document.createCDATASection(''));
             this.setPropertyTypeBind('textContent', (node, value) => { node.textContent = value.newValue || ''; });
         }
         _updateNode(node, newProperties, oldProperties) {
@@ -421,8 +478,8 @@
             const newVirdNodes = clearFragmentNode(renderVirdNodes);
             const oldVirdNodes = this.getChildrenVirdNode(node);
             const childNodes = [...node.childNodes];
-            this._renderMap.set(node, renderItems);
-            this._oldVirdNodeMap.set(node, newVirdNodes);
+            this._renderMap.set(node, renderVirdNodes);
+            this._oldVirdNodeMap.set(node, newVirdNodes.map(virdNode => cloneVirdNode(virdNode)));
             let i = 0;
             const maxIndex = Math.max(childNodes.length, newVirdNodes.length);
             while (i < maxIndex) {
@@ -431,6 +488,9 @@
                 const childNode = (childNodes[i] || null);
                 let newNode = null;
                 if (newVirdNode) {
+                    if (newVirdNode instanceof VirdElement) {
+                        newVirdNode.addEventListener('update', () => { this.reRender(node); });
+                    }
                     if (!oldVirdNode || oldVirdNode.type !== newVirdNode.type) {
                         newNode = this.createNode(newVirdNode);
                         if (childNode) {
@@ -501,7 +561,6 @@
                 createNode = document.createElement(virdNode.type);
             }
             this._nodeMap.set(virdNode, createNode);
-            this._virdNodeMap.set(createNode, virdNode);
             return createNode;
         }
         clone() {
@@ -515,9 +574,6 @@
         }
         getNode(virdNode) {
             return this._nodeMap.get(virdNode) || null;
-        }
-        getVirdNode(node) {
-            return this._virdNodeMap.get(node) || null;
         }
         getChildrenVirdNode(node) {
             return this._oldVirdNodeMap.get(node) || [];
@@ -559,11 +615,13 @@
     exports.Renderer = Renderer;
     exports.VirdElement = VirdElement;
     exports.cloneVirdNode = cloneVirdNode;
-    exports.createComment = createComment;
-    exports.createFragment = createFragment;
+    exports.config = config;
+    exports.createElement = createElement;
     exports.createNode = createNode;
-    exports.createText = createText;
+    exports.createVirdComment = createVirdComment;
+    exports.createVirdFragment = createVirdFragment;
     exports.createVirdNode = createVirdNode;
+    exports.createVirdText = createVirdText;
     exports.renderer = renderer;
     exports.virdNodeTypes = virdNodeTypes;
 

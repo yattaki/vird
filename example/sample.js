@@ -3,83 +3,41 @@
 import * as vird from '../dist/index.js'
 
 (async () => {
+  const timer = 1000
   const templateElement = document.getElementById('template')
-
-  // Example 01
-  const renderedVElements = await new Promise((resolve) => {
-    const virdNode = vird.createNode('div', 'Hallo World!!')
-    const renderedVElements = vird.renderer.render(document.body, virdNode)
-
-    setTimeout(() => { resolve(renderedVElements) }, 1000)
+  const pause = (time) => new Promise(resolve => {
+    setTimeout(() => { resolve() }, time)
   })
 
-  // Example 02
-  await new Promise((resolve) => {
-    const virdNodes = [
-      ...renderedVElements,
-      vird.createNode('div', { style: 'color: #4caf50' }, 'Vird is very easy!!')
-    ]
-    vird.renderer.render(document.body, ...virdNodes)
+  // Example 01 Element render.
+  const helloVirdElement = vird.createElement('div', 'Hallo World !')
+  vird.renderer.render(document.body, helloVirdElement)
 
-    setTimeout(() => { resolve() }, 1000)
-  })
+  await pause(timer)
 
-  // Example 03
-  await new Promise((resolve) => {
-    // @ts-ignore
-    const cloneElement = document.importNode(templateElement.content, true)
-    const virdNode = vird.createNode(cloneElement, true)
+  // Example 02 Multiple elements render.
+  const virdElements = [
+    vird.createElement('div', 'Multiple elements render.'),
+    vird.createElement('div', { style: 'color: #00d7d7' }, 'Vird is very easy !')
+  ]
+  vird.renderer.render(document.body, ...virdElements)
 
-    vird.renderer.render(document.body, virdNode)
+  await pause(timer)
 
-    setTimeout(() => { resolve() }, 1000)
-  })
+  // Example 03 Automatic re render.
+  const replaceVirdElement = vird.createElement('div', { textContent: '{ text : Before Text. }' })
+  vird.renderer.render(document.body, replaceVirdElement)
 
-  // Example 04
-  await new Promise((resolve) => {
-    const effect = vird.renderer.createEffect(document.body, (value) => value, 'Before text.')
-    const render = () => vird.createFragment(
-      vird.createNode('div', 'Effect rendering sample.'),
-      vird.createNode('div', effect.value)
-    )
+  await pause(timer)
+  replaceVirdElement.setState({ text: 'After Text.' }) // re rendering.
+  await pause(timer)
 
-    vird.renderer.render(document.body, render)
+  // Example 04 TemplateElement render.
+  // @ts-ignore
+  const cloneElement = document.importNode(templateElement.content, true)
+  const templateVirdElement = vird.createElement(cloneElement, true)
+  templateVirdElement.setState({ text: 'Data binding.' })
+  templateVirdElement.setAcceptParentStateOfChildren(true) // Child element accepts parent state.
 
-    setTimeout(() => { effect.setEffect('After text.') }, 1000)
-
-    setTimeout(() => { resolve() }, 2000)
-  })
-
-  // Example 05
-  await new Promise((resolve) => {
-    class Component {
-      constructor () {
-        this.node = null
-        this.state = { count: 0 }
-      }
-
-      setState (state) {
-        this.state = { ...this.state, ...state }
-        if (this.node) { vird.renderer.reRender(this.node) }
-      }
-
-      render () {
-        return (node) => {
-          this.node = node
-
-          return vird.createFragment(
-            vird.createNode('div', 'Component rendering sample.'),
-            vird.createNode('div', `Count ${this.state.count}.`)
-          )
-        }
-      }
-    }
-
-    const component = new Component()
-    vird.renderer.render(document.body, component.render())
-
-    setInterval(() => { component.setState({ count: component.state.count + 1 }) }, 1000)
-
-    setTimeout(() => { resolve() }, 1000)
-  })
+  vird.renderer.render(document.body, templateVirdElement)
 })()

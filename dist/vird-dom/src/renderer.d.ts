@@ -11,12 +11,10 @@ export declare class Renderer {
     private readonly _renderMap;
     private readonly _oldVirdNodeMap;
     private readonly _nodeMap;
-    private readonly _virdNodeMap;
     private readonly _nodeCreatorMap;
     private _propertyTypeBinderMap;
     private _propertyTypeRegExpBinderMap;
     private _customNodeCreatorMap;
-    fragmentType: string;
     constructor();
     private _updateNode;
     render(node: Node, ...renderItems: RenderItem[]): VirdNode[];
@@ -30,7 +28,6 @@ export declare class Renderer {
     createNode(virdNode: VirdNode): Node;
     clone(): void;
     getNode(virdNode: VirdNode): Node | null;
-    getVirdNode(node: Node): VirdNode | null;
     getChildrenVirdNode(node: Node): VirdNode[];
     setCustomNode(type: string, creator: CustomNodeCreator): this;
     removeCustomNode(type: string): this;

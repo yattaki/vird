@@ -5,7 +5,8 @@ import {
   virdNodeTypes,
   VirdNodeComment,
   VirdNodeText,
-  VirdNodeFragment
+  VirdNodeFragment,
+  VirdElement
 } from '../../vird/index'
 
 export function createNode (node: Node, trim?: boolean): VirdNode
@@ -15,6 +16,11 @@ export function createNode (type: VirdNodeTypes['fragment'], children?: string |
 export function createNode (type: string, children: string | (string | VirdNode)[]): VirdNode
 export function createNode (type: string, properties: VirdNode['properties'], children?: string | (string | VirdNode)[]): VirdNode
 export function createNode (type: string, properties?: VirdNode['properties'] | string | (string | VirdNode)[], children?: string | (string | VirdNode)[]): VirdNode
+export function createNode (
+  nodeOrType: string | Node,
+  propertiesOrTrim?: VirdNode['properties'] | string | (string | VirdNode)[] | boolean,
+  children?: string | (string | VirdNode)[]
+): VirdNode
 export function createNode (
   nodeOrType: string | Node,
   propertiesOrTrim: VirdNode['properties'] | string | (string | VirdNode)[] | boolean = false,
@@ -31,7 +37,7 @@ export function createNode (
       for (const { name, value } of node.attributes) {
         properties[name] = value
       }
-    } else {
+    } else if (!(node instanceof DocumentFragment)) {
       properties.textContent = node.textContent || ''
     }
 
@@ -47,4 +53,18 @@ export function createNode (
 
     return createVirdNode(type, properties, children)
   }
+}
+
+export function createElement (node: Node, trim?: boolean): VirdElement
+export function createElement (type: string, children: string | (string | VirdNode)[]): VirdElement
+export function createElement (type: string, properties: VirdNode['properties'], children?: string | (string | VirdNode)[]): VirdElement
+export function createElement (type: string, properties?: VirdNode['properties'] | string | (string | VirdNode)[], children?: string | (string | VirdNode)[]): VirdElement
+export function createElement (
+  nodeOrType: string | Node,
+  propertiesOrTrim?: VirdNode['properties'] | string | (string | VirdNode)[] | boolean,
+  children?: string | (string | VirdNode)[]
+): VirdNode {
+  const virdNode = createNode(nodeOrType, propertiesOrTrim, children)
+
+  return new VirdElement(virdNode)
 }

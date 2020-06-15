@@ -10,7 +10,7 @@ const plugins = [
 
 export default {
   plugins,
-  input: 'packages/index.ts',
+  input: 'src/index.ts',
   output: [
     {
       file: 'dist/index.js',

@@ -1,5 +1,5 @@
-import { VirdNode } from '../../vird/index'
-import { createNode } from './create-node'
+import { VirdNode, VirdElement, cloneVirdNode, virdNodeTypes } from '../../vird/index'
+import { createNode } from './node-creators'
 import { diff } from './diff'
 import { clearFragmentNode } from './clear-fragment-node'
 
@@ -10,20 +10,18 @@ export type PropertyTypeRegExpBinder = (node: Node, matchArray: RegExpMatchArray
 export type CustomNodeCreator = (virdNode: VirdNode) => Node
 
 export class Renderer {
-  private readonly _renderMap: WeakMap<Node, (VirdNode | ((node: Node) => VirdNode))[]> = new Map()
+  private readonly _renderMap: WeakMap<Node, VirdNode[]> = new Map()
   private readonly _oldVirdNodeMap: WeakMap<Node, VirdNode[]> = new Map()
   private readonly _nodeMap: WeakMap<VirdNode, Node> = new WeakMap()
-  private readonly _virdNodeMap: WeakMap<Node, VirdNode> = new WeakMap()
   private readonly _nodeCreatorMap: WeakMap<Node, CustomNodeCreator> = new WeakMap()
   private _propertyTypeBinderMap: Map<string, PropertyTypeBinder> = new Map()
   private _propertyTypeRegExpBinderMap: Map<RegExp, PropertyTypeRegExpBinder> = new Map()
   private _customNodeCreatorMap: Map<string, CustomNodeCreator> = new Map()
-  fragmentType = '#document-fragment'
 
   constructor () {
-    this.setCustomNode('#text', () => document.createTextNode(''))
-    this.setCustomNode('#comment', () => document.createComment(''))
-    this.setCustomNode('#cdata-section', () => document.createCDATASection(''))
+    this.setCustomNode(virdNodeTypes.text, () => document.createTextNode(''))
+    this.setCustomNode(virdNodeTypes.comment, () => document.createComment(''))
+    this.setCustomNode(virdNodeTypes.fragment, () => document.createCDATASection(''))
     this.setPropertyTypeBind('textContent', (node, value) => { node.textContent = value.newValue || '' })
   }
 
@@ -63,8 +61,8 @@ export class Renderer {
     const newVirdNodes = clearFragmentNode(renderVirdNodes)
     const oldVirdNodes = this.getChildrenVirdNode(node)
     const childNodes = [...node.childNodes]
-    this._renderMap.set(node, renderItems)
-    this._oldVirdNodeMap.set(node, newVirdNodes)
+    this._renderMap.set(node, renderVirdNodes)
+    this._oldVirdNodeMap.set(node, newVirdNodes.map(virdNode => cloneVirdNode(virdNode)))
 
     let i = 0
     const maxIndex = Math.max(childNodes.length, newVirdNodes.length)
@@ -75,6 +73,10 @@ export class Renderer {
 
       let newNode: Node | null = null
       if (newVirdNode) {
+        if (newVirdNode instanceof VirdElement) {
+          newVirdNode.addEventListener('update', () => { this.reRender(node) })
+        }
+
         if (!oldVirdNode || oldVirdNode.type !== newVirdNode.type) {
           newNode = this.createNode(newVirdNode)
 
@@ -153,7 +155,6 @@ export class Renderer {
     if (!createNode) { createNode = document.createElement(virdNode.type) }
 
     this._nodeMap.set(virdNode, createNode)
-    this._virdNodeMap.set(createNode, virdNode)
 
     return createNode
   }
@@ -172,10 +173,6 @@ export class Renderer {
 
   getNode (virdNode: VirdNode) {
     return this._nodeMap.get(virdNode) || null
-  }
-
-  getVirdNode (node: Node) {
-    return this._virdNodeMap.get(node) || null
   }
 
   getChildrenVirdNode (node: Node) {
