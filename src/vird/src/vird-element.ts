@@ -148,6 +148,11 @@ export class VirdElement<T extends { [key: string]: any } = { [key: string]: any
       if (getter(child)) {
         hitVirdElements.push(child)
       }
+
+      const childHits = child.getVirdElements(getter)
+      if (childHits.length > 0) {
+        hitVirdElements.push(...childHits)
+      }
     }
 
     return hitVirdElements

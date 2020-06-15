@@ -232,6 +232,10 @@ var vird = (function (exports) {
                 if (getter(child)) {
                     hitVirdElements.push(child);
                 }
+                const childHits = child.getVirdElements(getter);
+                if (childHits.length > 0) {
+                    hitVirdElements.push(...childHits);
+                }
             }
             return hitVirdElements;
         }
