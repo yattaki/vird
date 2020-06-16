@@ -12,7 +12,6 @@ export type CustomNodeCreator = (virdNode: VirdNode) => Node
 export class Renderer {
   private readonly _renderMap: WeakMap<Node, VirdNode[]> = new Map()
   private readonly _oldVirdNodeMap: WeakMap<Node, VirdNode[]> = new Map()
-  private readonly _nodeMap: WeakMap<VirdNode, Node> = new WeakMap()
   private readonly _nodeCreatorMap: WeakMap<Node, CustomNodeCreator> = new WeakMap()
   private _propertyTypeBinderMap: Map<string, PropertyTypeBinder> = new Map()
   private _propertyTypeRegExpBinderMap: Map<RegExp, PropertyTypeRegExpBinder> = new Map()
@@ -143,8 +142,6 @@ export class Renderer {
 
   createNode (virdNode: VirdNode) {
     let createNode: Node | undefined
-    const realNode = this._nodeMap.get(virdNode)
-    if (realNode) { createNode = realNode }
 
     const beforeCreator = createNode ? this._nodeCreatorMap.get(createNode) : undefined
     const creator = this._customNodeCreatorMap.get(virdNode.type)
@@ -153,8 +150,6 @@ export class Renderer {
     }
 
     if (!createNode) { createNode = document.createElement(virdNode.type) }
-
-    this._nodeMap.set(virdNode, createNode)
 
     return createNode
   }
@@ -169,10 +164,6 @@ export class Renderer {
     for (const [type, binder] of this._propertyTypeBinderMap) {
       renderer.setPropertyTypeBind(type, binder)
     }
-  }
-
-  getNode (virdNode: VirdNode) {
-    return this._nodeMap.get(virdNode) || null
   }
 
   getChildrenVirdNode (node: Node) {

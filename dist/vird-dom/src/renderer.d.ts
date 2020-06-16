@@ -10,7 +10,6 @@ export declare type CustomNodeCreator = (virdNode: VirdNode) => Node;
 export declare class Renderer {
     private readonly _renderMap;
     private readonly _oldVirdNodeMap;
-    private readonly _nodeMap;
     private readonly _nodeCreatorMap;
     private _propertyTypeBinderMap;
     private _propertyTypeRegExpBinderMap;
@@ -27,7 +26,6 @@ export declare class Renderer {
     };
     createNode(virdNode: VirdNode): Node;
     clone(): void;
-    getNode(virdNode: VirdNode): Node | null;
     getChildrenVirdNode(node: Node): VirdNode[];
     setCustomNode(type: string, creator: CustomNodeCreator): this;
     removeCustomNode(type: string): this;
