@@ -1,5 +1,5 @@
-import { VirdNode } from '../../vird/index';
-export declare type RenderItem = VirdNode | ((node: Node) => VirdNode);
+import { VirdNode, VirdElement } from '../../vird/index';
+export declare type RenderItem = VirdNode | VirdElement | ((node: Node) => VirdNode | VirdElement);
 export declare type PropertyValueMap = {
     newValue?: string;
     oldValue?: string;
@@ -15,9 +15,13 @@ export declare class Renderer {
     private _propertyTypeRegExpBinderMap;
     private _customNodeCreatorMap;
     constructor();
-    private _updateNode;
-    render(node: Node, ...renderItems: RenderItem[]): VirdNode[];
-    renderDom(node: Node, trim?: boolean): VirdNode[];
+    private _updateProperties;
+    render(node: Node, ...renderItems: RenderItem[]): (VirdNode | VirdElement<{
+        [key: string]: any;
+    }>)[];
+    renderDom(node: Node, trim?: boolean): (VirdNode | VirdElement<{
+        [key: string]: any;
+    }>)[];
     reRender(node: Node): void;
     createDispatcher(node: Node): (beforeCallback?: (() => void | Promise<void>) | undefined) => Promise<void>;
     createEffect<R = any>(node: Node, effect: (value: R) => R | Promise<R>, initValue: R): R;

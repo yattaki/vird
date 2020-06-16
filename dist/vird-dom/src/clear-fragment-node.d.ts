@@ -1,2 +1,5 @@
 import { VirdNode } from '../../vird/index';
-export declare function clearFragmentNode(virdNodes: VirdNode[]): VirdNode[];
+import { VirdElement } from '../../vird/src/vird-element';
+export declare function clearFragmentNode(virdNodes: (VirdNode | VirdElement)[]): (VirdNode | VirdElement<{
+    [key: string]: any;
+}>)[];

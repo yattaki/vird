@@ -9,27 +9,27 @@ export function cloneVirdNode<R extends VirdNode> (virdNode: R, deep = false): R
   return { type, properties, children } as R
 }
 
-export function createVirdText (text = ''): VirdNodeText {
+export function createVirdText (text = '') {
   const type = virdNodeTypes.text
   const properties = { textContent: text }
   const children: never[] = []
 
-  return { type, properties, children }
+  return { type, properties, children } as VirdNodeText
 }
 
-export function createVirdComment (comment = ''): VirdNodeComment {
+export function createVirdComment (comment = '') {
   const type = virdNodeTypes.comment
   const properties = { textContent: comment }
   const children: never[] = []
 
-  return { type, properties, children }
+  return { type, properties, children } as VirdNodeComment
 }
 
-export function createVirdFragment (...children: VirdNode[]): VirdNodeFragment {
+export function createVirdFragment (...children: VirdNode[]) {
   const type = virdNodeTypes.fragment
   const properties = {}
 
-  return { type, properties, children }
+  return { type, properties, children } as VirdNodeFragment
 }
 
 export function createVirdNode (type: VirdNodeTypes['text'], properties?: VirdNodeText['properties']): VirdNodeText
@@ -53,5 +53,5 @@ export function createVirdNode (type: string, properties?: VirdNode['properties'
     addChildren = []
   }
 
-  return { type, properties, children: addChildren }
+  return { type, properties, children: addChildren } as VirdNode
 }

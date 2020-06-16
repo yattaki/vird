@@ -7,7 +7,11 @@ export function diff<T = { [key: string]: any }> (checkObject?: T, comparisonObj
         const checkObjectKeys = Object.keys(checkObject)
         const comparisonObjetKeys = Object.keys(comparisonObjet)
 
-        const keys = new Set([...checkObjectKeys, ...comparisonObjetKeys]) as Set<Extract<keyof T, string>>
+        const keys = new Set([
+          ...checkObjectKeys,
+          ...comparisonObjetKeys
+        ]) as Set<Extract<keyof T, string>>
+
         for (const key of keys) {
           const checkObjetValue = checkObject[key]
           const comparisonObjetValue = comparisonObjet[key]

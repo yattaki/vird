@@ -23,7 +23,13 @@ export class VirdElement<T extends { [key: string]: any } = { [key: string]: any
   constructor (virdNode: VirdNode) {
     super()
 
-    this.virdNode = virdNode instanceof VirdElement ? virdNode.virdNode : virdNode
+    if (virdNode instanceof VirdElement) {
+      this.virdNode = virdNode.virdNode
+      virdNode.addEventListener('update', () => { this.update() })
+    } else {
+      this.virdNode = cloneVirdNode(virdNode)
+    }
+
     this.setChildren(virdNode.children.map((child) =>
       child instanceof VirdElement
         ? child

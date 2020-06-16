@@ -63,7 +63,7 @@
         if (!space) {
             space = ':';
         }
-        config.binding = new RegExp(`${startBracket}\\s*([^\\s:}]+)(?:\\s*${space}\\s*((?:[^\\s}]|\\s+[^}])*))?\\s*${endBracket}`, 'g');
+        config.binding = new RegExp(`${startBracket}\\s*([^\\s${space}${endBracket}]+)(?:\\s*${space}\\s*((?:[^\\s${endBracket}]|\\s+[^${endBracket}])*))?\\s*${endBracket}`, 'g');
     }
     setBindingConfig('{', ':', '}');
 
@@ -151,7 +151,13 @@
             this._children = [];
             this._state = {};
             this.acceptParentState = false;
-            this.virdNode = virdNode instanceof VirdElement ? virdNode.virdNode : virdNode;
+            if (virdNode instanceof VirdElement) {
+                this.virdNode = virdNode.virdNode;
+                virdNode.addEventListener('update', () => { this.update(); });
+            }
+            else {
+                this.virdNode = cloneVirdNode(virdNode);
+            }
             this.setChildren(virdNode.children.map((child) => child instanceof VirdElement
                 ? child
                 : new VirdElement(child)));
@@ -418,7 +424,10 @@
                 if (comparisonObjet) {
                     const checkObjectKeys = Object.keys(checkObject);
                     const comparisonObjetKeys = Object.keys(comparisonObjet);
-                    const keys = new Set([...checkObjectKeys, ...comparisonObjetKeys]);
+                    const keys = new Set([
+                        ...checkObjectKeys,
+                        ...comparisonObjetKeys
+                    ]);
                     for (const key of keys) {
                         const checkObjetValue = checkObject[key];
                         const comparisonObjetValue = comparisonObjet[key];
@@ -471,10 +480,10 @@
             this._customNodeCreatorMap = new Map();
             this.setCustomNode(virdNodeTypes.text, () => document.createTextNode(''));
             this.setCustomNode(virdNodeTypes.comment, () => document.createComment(''));
-            this.setCustomNode(virdNodeTypes.fragment, () => document.createCDATASection(''));
+            this.setCustomNode(virdNodeTypes.fragment, () => document.createDocumentFragment());
             this.setPropertyTypeBind('textContent', (node, value) => { node.textContent = value.newValue || ''; });
         }
-        _updateNode(node, newProperties, oldProperties) {
+        _updateProperties(node, newProperties, oldProperties) {
             const diffObject = diff(newProperties, oldProperties);
             for (const type of Object.keys(diffObject)) {
                 const [newValue, oldValue] = diffObject[type];
@@ -509,7 +518,9 @@
             const oldVirdNodes = this.getChildrenVirdNode(node);
             const childNodes = [...node.childNodes];
             this._renderMap.set(node, renderVirdNodes);
-            this._oldVirdNodeMap.set(node, newVirdNodes.map(virdNode => cloneVirdNode(virdNode)));
+            const oldVirdNodeItems = newVirdNodes
+                .map(virdNode => cloneVirdNode(virdNode instanceof VirdElement ? virdNode.virdNode : virdNode));
+            this._oldVirdNodeMap.set(node, oldVirdNodeItems);
             let i = 0;
             const maxIndex = Math.max(childNodes.length, newVirdNodes.length);
             while (i < maxIndex) {
@@ -540,7 +551,7 @@
                     }
                 }
                 if (newNode) {
-                    this._updateNode(newNode, newVirdNode ? newVirdNode.properties : undefined, oldVirdNode ? oldVirdNode.properties : undefined);
+                    this._updateProperties(newNode, newVirdNode ? newVirdNode.properties : undefined, oldVirdNode ? oldVirdNode.properties : undefined);
                     if (newVirdNode && newVirdNode.children.length > 0) {
                         this.render(newNode, ...newVirdNode.children);
                     }

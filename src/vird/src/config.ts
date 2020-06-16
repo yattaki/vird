@@ -17,7 +17,7 @@ export function setBindingConfig (startBracket: string | RegExp, space?: string,
   if (!endBracket) { endBracket = space || startBracket }
   if (!space) { space = ':' }
 
-  config.binding = new RegExp(`${startBracket}\\s*([^\\s:}]+)(?:\\s*${space}\\s*((?:[^\\s}]|\\s+[^}])*))?\\s*${endBracket}`, 'g')
+  config.binding = new RegExp(`${startBracket}\\s*([^\\s${space}${endBracket}]+)(?:\\s*${space}\\s*((?:[^\\s${endBracket}]|\\s+[^${endBracket}])*))?\\s*${endBracket}`, 'g')
 }
 
 setBindingConfig('{', ':', '}')

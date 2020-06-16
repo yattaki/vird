@@ -1,18 +1,16 @@
 import { VirdNode } from '../../vird/index'
 import { virdNodeTypes } from '../../vird/src/vird-node-types'
+import { VirdElement } from '../../vird/src/vird-element'
 
-export function clearFragmentNode (virdNodes: VirdNode[]) {
-  const result: VirdNode[] = []
+export function clearFragmentNode (virdNodes: (VirdNode | VirdElement)[]) {
+  const result: (VirdNode | VirdElement)[] = []
 
-  const pushVirdNodes: VirdNode[] = []
   for (const virdNode of virdNodes) {
     if (virdNode.type === virdNodeTypes.fragment) {
       const children = clearFragmentNode(virdNode.children)
       result.push(...children)
-      pushVirdNodes.push(...children)
     } else {
       result.push(virdNode)
-      pushVirdNodes.push(virdNode)
     }
   }
 

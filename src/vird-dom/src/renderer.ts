@@ -3,14 +3,14 @@ import { createNode } from './node-creators'
 import { diff } from './diff'
 import { clearFragmentNode } from './clear-fragment-node'
 
-export type RenderItem = VirdNode | ((node: Node) => VirdNode)
+export type RenderItem = VirdNode | VirdElement | ((node: Node) => VirdNode | VirdElement)
 export type PropertyValueMap = { newValue?: string, oldValue?: string }
 export type PropertyTypeBinder = (node: Node, value: PropertyValueMap) => void
 export type PropertyTypeRegExpBinder = (node: Node, matchArray: RegExpMatchArray, value: PropertyValueMap) => string
 export type CustomNodeCreator = (virdNode: VirdNode) => Node
 
 export class Renderer {
-  private readonly _renderMap: WeakMap<Node, VirdNode[]> = new Map()
+  private readonly _renderMap: WeakMap<Node, (VirdNode | VirdElement)[]> = new Map()
   private readonly _oldVirdNodeMap: WeakMap<Node, VirdNode[]> = new Map()
   private readonly _nodeCreatorMap: WeakMap<Node, CustomNodeCreator> = new WeakMap()
   private _propertyTypeBinderMap: Map<string, PropertyTypeBinder> = new Map()
@@ -20,11 +20,17 @@ export class Renderer {
   constructor () {
     this.setCustomNode(virdNodeTypes.text, () => document.createTextNode(''))
     this.setCustomNode(virdNodeTypes.comment, () => document.createComment(''))
-    this.setCustomNode(virdNodeTypes.fragment, () => document.createCDATASection(''))
-    this.setPropertyTypeBind('textContent', (node, value) => { node.textContent = value.newValue || '' })
+    this.setCustomNode(
+      virdNodeTypes.fragment,
+      () => document.createDocumentFragment()
+    )
+    this.setPropertyTypeBind(
+      'textContent',
+      (node, value) => { node.textContent = value.newValue || '' }
+    )
   }
 
-  private _updateNode (node: Node, newProperties?: VirdNode['properties'], oldProperties?: VirdNode['properties']) {
+  private _updateProperties (node: Node, newProperties?: VirdNode['properties'], oldProperties?: VirdNode['properties']) {
     const diffObject = diff(newProperties, oldProperties)
 
     for (const type of Object.keys(diffObject)) {
@@ -61,7 +67,10 @@ export class Renderer {
     const oldVirdNodes = this.getChildrenVirdNode(node)
     const childNodes = [...node.childNodes]
     this._renderMap.set(node, renderVirdNodes)
-    this._oldVirdNodeMap.set(node, newVirdNodes.map(virdNode => cloneVirdNode(virdNode)))
+
+    const oldVirdNodeItems = newVirdNodes
+      .map(virdNode => cloneVirdNode(virdNode instanceof VirdElement ? virdNode.virdNode : virdNode))
+    this._oldVirdNodeMap.set(node, oldVirdNodeItems)
 
     let i = 0
     const maxIndex = Math.max(childNodes.length, newVirdNodes.length)
@@ -94,8 +103,9 @@ export class Renderer {
       }
 
       if (newNode) {
-        this._updateNode(
-          newNode, newVirdNode ? newVirdNode.properties : undefined,
+        this._updateProperties(
+          newNode,
+          newVirdNode ? newVirdNode.properties : undefined,
           oldVirdNode ? oldVirdNode.properties : undefined
         )
 
