@@ -1,6 +1,6 @@
 {
   "name": "vird",
-  "version": "3.0.3",
+  "version": "3.1.0",
   "description": "Vird is a great virtual DOM library that can extend rendering.",
   "main": "dist/index.cjs.js",
   "jsdelivr": "dist/index.iife.js",
