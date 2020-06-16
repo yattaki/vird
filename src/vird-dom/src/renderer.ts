@@ -130,12 +130,15 @@ export class Renderer {
     }
   }
 
-  createEffect<T = any> (node: Node, effect: (value?: T) => T | Promise<T>, initValue?: T) {
+  createEffect<R = any> (node: Node, effect: (value: R) => R | Promise<R>, initValue: R): R
+  createEffect(node: Node, effect: () => void | Promise<void>): void
+  createEffect<R = any> (node: Node, effect: (value?: R) => R | Promise<R>, initValue?: R): R
+  createEffect<R = any> (node: Node, effect: (value?: R) => R | Promise<R>, initValue?: R) {
     const dispatcher = this.createDispatcher(node)
 
     return {
       value: initValue,
-      setEffect (value: T) {
+      setEffect (value: R) {
         dispatcher(async () => { this.value = await effect(value) })
       }
     }
