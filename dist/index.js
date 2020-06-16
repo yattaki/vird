@@ -45,9 +45,21 @@ function createVirdNode(type, properties, children) {
     return { type, properties, children: addChildren };
 }
 
-const config = {
-    binding: /{\s*([^\s:}]+)(?:\s*:\s*((?:[^\s}]|\s+[^}])*))?\s*}/
-};
+const config = { binding: null };
+function setBindingConfig(startBracket, space, endBracket) {
+    if (startBracket instanceof RegExp) {
+        config.binding = startBracket;
+        return;
+    }
+    if (!endBracket) {
+        endBracket = space || startBracket;
+    }
+    if (!space) {
+        space = ':';
+    }
+    config.binding = new RegExp(`${startBracket}\\s*([^\\s:}]+)(?:\\s*${space}\\s*((?:[^\\s}]|\\s+[^}])*))?\\s*${endBracket}`, 'g');
+}
+setBindingConfig('{', ':', '}');
 
 class EventHandler {
     constructor() {
@@ -616,5 +628,5 @@ class Renderer {
 }
 const renderer = new Renderer();
 
-export { Renderer, VirdElement, cloneVirdNode, config, createElement, createNode, createVirdComment, createVirdFragment, createVirdNode, createVirdText, renderer, virdNodeTypes };
+export { Renderer, VirdElement, cloneVirdNode, config, createElement, createNode, createVirdComment, createVirdFragment, createVirdNode, createVirdText, renderer, setBindingConfig, virdNodeTypes };
 //# sourceMappingURL=index.js.map

@@ -20,10 +20,9 @@ export declare class Renderer {
     renderDom(node: Node, trim?: boolean): VirdNode[];
     reRender(node: Node): void;
     createDispatcher(node: Node): (beforeCallback?: (() => void | Promise<void>) | undefined) => Promise<void>;
-    createEffect<T = any>(node: Node, effect: (value?: T) => T | Promise<T>, initValue?: T): {
-        value: T | undefined;
-        setEffect(value: T): void;
-    };
+    createEffect<R = any>(node: Node, effect: (value: R) => R | Promise<R>, initValue: R): R;
+    createEffect(node: Node, effect: () => void | Promise<void>): void;
+    createEffect<R = any>(node: Node, effect: (value?: R) => R | Promise<R>, initValue?: R): R;
     createNode(virdNode: VirdNode): Node;
     clone(): void;
     getChildrenVirdNode(node: Node): VirdNode[];

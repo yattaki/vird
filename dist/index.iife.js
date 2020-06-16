@@ -48,9 +48,21 @@ var vird = (function (exports) {
         return { type, properties, children: addChildren };
     }
 
-    const config = {
-        binding: /{\s*([^\s:}]+)(?:\s*:\s*((?:[^\s}]|\s+[^}])*))?\s*}/
-    };
+    const config = { binding: null };
+    function setBindingConfig(startBracket, space, endBracket) {
+        if (startBracket instanceof RegExp) {
+            config.binding = startBracket;
+            return;
+        }
+        if (!endBracket) {
+            endBracket = space || startBracket;
+        }
+        if (!space) {
+            space = ':';
+        }
+        config.binding = new RegExp(`${startBracket}\\s*([^\\s:}]+)(?:\\s*${space}\\s*((?:[^\\s}]|\\s+[^}])*))?\\s*${endBracket}`, 'g');
+    }
+    setBindingConfig('{', ':', '}');
 
     class EventHandler {
         constructor() {
@@ -630,6 +642,7 @@ var vird = (function (exports) {
     exports.createVirdNode = createVirdNode;
     exports.createVirdText = createVirdText;
     exports.renderer = renderer;
+    exports.setBindingConfig = setBindingConfig;
     exports.virdNodeTypes = virdNodeTypes;
 
     return exports;
