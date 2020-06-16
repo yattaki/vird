@@ -1,10 +1,10 @@
 # Vird
 
-![npm version](https://img.shields.io/npm/v/vird)
-![npm type definitions](https://img.shields.io/npm/types/vird)
-![npm bundle size](https://img.shields.io/bundlephobia/min/vird)
-![npm downloads](https://img.shields.io/npm/dt/vird)
-![npm license](https://img.shields.io/npm/l/vird)
+[![npm version](https://img.shields.io/npm/v/vird)](https://www.npmjs.com/package/vird?activeTab=versions)
+[![npm type definitions](https://img.shields.io/npm/types/vird)](https://www.typescriptlang.org)
+[![npm bundle size](https://img.shields.io/bundlephobia/min/vird)](https://www.npmjs.com/package/vird)
+[![npm downloads](https://img.shields.io/npm/dt/vird)](https://www.npmjs.com/package/vird)
+[![npm license](https://img.shields.io/npm/l/vird)](https://github.com/yattaki/vird/blob/master/LICENSE)
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
 <p align="center">
@@ -64,15 +64,22 @@ vird.renderer.render(document.body, ...virdElements)
 
 ```typescript
 // Example 03 Automatic re render.
-const replaceVirdElement = vird.createElement('div', { textContent: '{ text : Before Text. }' })
+const replaceVirdElement = vird.createElement('div', {
+  textContent: '{ text : Before Text. }',
+  style: '{ style }'
+})
+
 vird.renderer.render(document.body, replaceVirdElement)
 
 setTimeout(() => {
-  replaceVirdElement.setState({ text: 'After Text.' }) // re rendering.
+  replaceVirdElement.setState({
+    text: 'After Text.',
+    style: 'color: #00d7d7;'
+  }) // re rendering.
 }, 1000)
 ```
 
-### Example 04 TemplateElement render.
+### Example 04 HTMLTemplateElement render.
 
 ```HTML
 <template id="template">
@@ -82,7 +89,7 @@ setTimeout(() => {
 ```
 
 ```typescript
-// Example 04 TemplateElement render.
+// Example 04 HTMLTemplateElement render.
 const templateElement = document.getElementById('template')
 
 const cloneElement = document.importNode(templateElement.content, true)
@@ -91,6 +98,26 @@ templateVirdElement.setState({ text: 'Data binding.' })
 templateVirdElement.setAcceptParentStateOfChildren(true) // Child element accepts parent state.
 
 vird.renderer.render(document.body, templateVirdElement)
+```
+
+### Example 05 Effect render.
+
+```typescript
+// Example 05 Effect render.
+const virdElement = vird.createElement('div', { textContent: '{ text }' })
+
+const { runEffect } = vird.renderer.createEffect(
+  document.body,
+  (text) => { virdElement.setState({ text }) }
+)
+
+runEffect('Wait for effect...')
+
+vird.renderer.render(document.body, virdElement)
+
+setTimeout(() => {
+  runEffect('Effect !')
+}, 1000)
 ```
 
 ## License

@@ -407,7 +407,13 @@ function createNode(nodeOrType, propertiesOrTrim = false, children) {
     }
 }
 function createElement(nodeOrType, propertiesOrTrim, children) {
-    const virdNode = createNode(nodeOrType, propertiesOrTrim, children);
+    if (Array.isArray(propertiesOrTrim)) {
+        children = propertiesOrTrim;
+        propertiesOrTrim = {};
+    }
+    const virdNode = createNode(nodeOrType, propertiesOrTrim, Array.isArray(children)
+        ? children.map(child => child instanceof VirdElement ? child.virdNode : child)
+        : children);
     return new VirdElement(virdNode);
 }
 
@@ -572,12 +578,11 @@ class Renderer {
             this.reRender(node);
         };
     }
-    createEffect(node, effect, initValue) {
+    createEffect(node, effect) {
         const dispatcher = this.createDispatcher(node);
         return {
-            value: initValue,
-            setEffect(value) {
-                dispatcher(async () => { this.value = await effect(value); });
+            runEffect(value) {
+                dispatcher(async () => { effect(value); });
             }
         };
     }

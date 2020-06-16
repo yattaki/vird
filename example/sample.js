@@ -25,14 +25,22 @@ import * as vird from '../dist/index.js'
   await pause(timer)
 
   // Example 03 Automatic re render.
-  const replaceVirdElement = vird.createElement('div', { textContent: '{ text : Before Text. }' })
+  const replaceVirdElement = vird.createElement('div', {
+    textContent: '{ text : Before Text. }',
+    style: '{ style }'
+  })
   vird.renderer.render(document.body, replaceVirdElement)
 
   await pause(timer)
-  replaceVirdElement.setState({ text: 'After Text.' }) // re rendering.
+
+  replaceVirdElement.setState({
+    text: 'After Text.',
+    style: 'color: #00d7d7;'
+  }) // re rendering.
+
   await pause(timer)
 
-  // Example 04 TemplateElement render.
+  // Example 04 HTMLTemplateElement render.
   // @ts-ignore
   const cloneElement = document.importNode(templateElement.content, true)
   const templateVirdElement = vird.createElement(cloneElement, true)
@@ -40,4 +48,22 @@ import * as vird from '../dist/index.js'
   templateVirdElement.setAcceptParentStateOfChildren(true) // Child element accepts parent state.
 
   vird.renderer.render(document.body, templateVirdElement)
+
+  await pause(timer)
+
+  // Example 05 Effect render.
+  const virdElement = vird.createElement('div', { textContent: '{ text }' })
+
+  const { runEffect } = vird.renderer.createEffect(
+    document.body,
+    (text) => { virdElement.setState({ text }) }
+  )
+
+  runEffect('Wait for effect...')
+
+  vird.renderer.render(document.body, virdElement)
+
+  await pause(timer)
+
+  runEffect('Effect !')
 })()

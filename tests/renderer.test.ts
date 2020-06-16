@@ -1,9 +1,14 @@
-import { renderer, createElement } from '../src/index'
+import { createElement, Renderer } from '../src/index'
 
 describe('Renderer test.', () => {
   const rootElement = document.body
 
-  test('Render', () => {
+  let renderer = new Renderer()
+  beforeEach(() => {
+    renderer = new Renderer()
+  })
+
+  test('Rendering', () => {
     const renderElements = [createElement('div')]
     renderer.render(rootElement, ...renderElements)
 
@@ -29,7 +34,20 @@ describe('Renderer test.', () => {
     expect(attributeValue).toBe(value)
   })
 
-  test('Add element', () => {
+  test('Check children', () => {
+    const virdElement = createElement('div', [
+      createElement('div'),
+      createElement('div'),
+      createElement('div')
+    ])
+
+    renderer.render(rootElement, virdElement)
+
+    const realElement = rootElement.children[0]
+    expect(realElement.children.length).toBe(virdElement.children.length)
+  })
+
+  test('Add element rendering', () => {
     const renderElements = [
       createElement('div'),
       createElement('div'),
@@ -49,7 +67,7 @@ describe('Renderer test.', () => {
     expect(newChildren.length).toBe(renderElements.length)
   })
 
-  test('Remove element', () => {
+  test('Remove element rendering', () => {
     const renderElements = [
       createElement('div'),
       createElement('div'),
@@ -64,7 +82,7 @@ describe('Renderer test.', () => {
     expect(oldChildren).toEqual([...rootElement.children])
   })
 
-  test('Clone render', () => {
+  test('Clone element rendering', () => {
     const virdElements = [
       createElement('div'),
       createElement('div'),
@@ -80,7 +98,7 @@ describe('Renderer test.', () => {
     expect(oldChildren).toEqual(newChildren)
   })
 
-  test('Re render', () => {
+  test('Re rendering', () => {
     renderer.render(
       rootElement,
       createElement('div'),
@@ -95,7 +113,7 @@ describe('Renderer test.', () => {
     expect(oldChildren).toEqual(newChildren)
   })
 
-  test('Data binding', () => {
+  test('Data binding rendering', () => {
     const oldText = Math.random().toString()
     const virdElement = createElement('div', { textContent: '{ text }' })
     virdElement.setState({ text: oldText })
@@ -107,5 +125,23 @@ describe('Renderer test.', () => {
     const newText = Math.random().toString()
     virdElement.setState({ text: newText })
     expect(realElement.textContent).toBe(newText)
+  })
+
+  test('Effect rendering', () => {
+    const virdElement = createElement('div', { textContent: '{ text }' })
+
+    const { runEffect } = renderer.createEffect(rootElement, (text: string) => {
+      virdElement.setState({ text })
+    })
+
+    renderer.render(rootElement, virdElement)
+
+    const realElement = rootElement.children[0]
+    expect(realElement.textContent).toBe('')
+
+    const oldText = Math.random().toString()
+    runEffect(oldText)
+
+    expect(realElement.textContent).toBe(oldText)
   })
 })

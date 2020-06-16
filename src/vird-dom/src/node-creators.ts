@@ -48,12 +48,23 @@ export function createNode (nodeOrType: string | Node, propertiesOrTrim: VirdNod
 }
 
 export function createElement (node: Node, trim?: boolean): VirdElement
-export function createElement (type: string, children: string | (string | VirdNode)[]): VirdElement
-export function createElement (type: string, properties: VirdNode['properties'], children?: string | (string | VirdNode)[]): VirdElement
-export function createElement (type: string, properties?: VirdNode['properties'] | string | (string | VirdNode)[], children?: string | (string | VirdNode)[]): VirdElement
-export function createElement (nodeOrType: string | Node, propertiesOrTrim?: VirdNode['properties'] | string | (string | VirdNode)[] | boolean, children?: string | (string | VirdNode)[]): VirdElement
-export function createElement (nodeOrType: string | Node, propertiesOrTrim?: VirdNode['properties'] | string | (string | VirdNode)[] | boolean, children?: string | (string | VirdNode)[]): VirdElement {
-  const virdNode = createNode(nodeOrType, propertiesOrTrim, children)
+export function createElement (type: string, children: string | (string | VirdNode | VirdElement)[]): VirdElement
+export function createElement (type: string, properties: VirdNode['properties'], children?: string | (string | VirdNode | VirdElement)[]): VirdElement
+export function createElement (type: string, properties?: VirdNode['properties'] | string | (string | VirdNode)[], children?: string | (string | VirdNode | VirdElement)[]): VirdElement
+export function createElement (nodeOrType: string | Node, propertiesOrTrim?: VirdNode['properties'] | string | (string | VirdNode | VirdElement)[] | boolean, children?: string | (string | VirdNode | VirdElement)[]): VirdElement
+export function createElement (nodeOrType: string | Node, propertiesOrTrim?: VirdNode['properties'] | string | (string | VirdNode | VirdElement)[] | boolean, children?: string | (string | VirdNode | VirdElement)[]): VirdElement {
+  if (Array.isArray(propertiesOrTrim)) {
+    children = propertiesOrTrim
+    propertiesOrTrim = {}
+  }
+
+  const virdNode = createNode(
+    nodeOrType,
+    propertiesOrTrim,
+    Array.isArray(children)
+      ? children.map(child => child instanceof VirdElement ? child.virdNode : child)
+      : children
+  )
 
   return new VirdElement(virdNode)
 }

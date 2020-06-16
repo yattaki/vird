@@ -8,7 +8,7 @@ export declare function createNode(type: string, properties: VirdNode['propertie
 export declare function createNode(type: string, properties?: VirdNode['properties'] | string | (string | VirdNode)[], children?: string | (string | VirdNode)[]): VirdNode;
 export declare function createNode(nodeOrType: string | Node, propertiesOrTrim?: VirdNode['properties'] | string | (string | VirdNode)[] | boolean, children?: string | (string | VirdNode)[]): VirdNode;
 export declare function createElement(node: Node, trim?: boolean): VirdElement;
-export declare function createElement(type: string, children: string | (string | VirdNode)[]): VirdElement;
-export declare function createElement(type: string, properties: VirdNode['properties'], children?: string | (string | VirdNode)[]): VirdElement;
-export declare function createElement(type: string, properties?: VirdNode['properties'] | string | (string | VirdNode)[], children?: string | (string | VirdNode)[]): VirdElement;
-export declare function createElement(nodeOrType: string | Node, propertiesOrTrim?: VirdNode['properties'] | string | (string | VirdNode)[] | boolean, children?: string | (string | VirdNode)[]): VirdElement;
+export declare function createElement(type: string, children: string | (string | VirdNode | VirdElement)[]): VirdElement;
+export declare function createElement(type: string, properties: VirdNode['properties'], children?: string | (string | VirdNode | VirdElement)[]): VirdElement;
+export declare function createElement(type: string, properties?: VirdNode['properties'] | string | (string | VirdNode)[], children?: string | (string | VirdNode | VirdElement)[]): VirdElement;
+export declare function createElement(nodeOrType: string | Node, propertiesOrTrim?: VirdNode['properties'] | string | (string | VirdNode | VirdElement)[] | boolean, children?: string | (string | VirdNode | VirdElement)[]): VirdElement;
