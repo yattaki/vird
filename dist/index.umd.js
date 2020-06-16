@@ -453,7 +453,6 @@
         constructor() {
             this._renderMap = new Map();
             this._oldVirdNodeMap = new Map();
-            this._nodeMap = new WeakMap();
             this._nodeCreatorMap = new WeakMap();
             this._propertyTypeBinderMap = new Map();
             this._propertyTypeRegExpBinderMap = new Map();
@@ -567,10 +566,6 @@
         }
         createNode(virdNode) {
             let createNode;
-            const realNode = this._nodeMap.get(virdNode);
-            if (realNode) {
-                createNode = realNode;
-            }
             const beforeCreator = createNode ? this._nodeCreatorMap.get(createNode) : undefined;
             const creator = this._customNodeCreatorMap.get(virdNode.type);
             if (beforeCreator !== creator && creator) {
@@ -579,7 +574,6 @@
             if (!createNode) {
                 createNode = document.createElement(virdNode.type);
             }
-            this._nodeMap.set(virdNode, createNode);
             return createNode;
         }
         clone() {
@@ -590,9 +584,6 @@
             for (const [type, binder] of this._propertyTypeBinderMap) {
                 renderer.setPropertyTypeBind(type, binder);
             }
-        }
-        getNode(virdNode) {
-            return this._nodeMap.get(virdNode) || null;
         }
         getChildrenVirdNode(node) {
             return this._oldVirdNodeMap.get(node) || [];

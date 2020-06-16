@@ -1,6 +1,4 @@
-<p align="center">
-  <img width="100" src="./vird-icon.svg" alt="vird logo">
-</p>
+# Vird
 
 ![npm version](https://img.shields.io/npm/v/vird)
 ![npm type definitions](https://img.shields.io/npm/types/vird)
@@ -9,7 +7,9 @@
 ![npm license](https://img.shields.io/npm/l/vird)
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
-# Vird
+<p align="center">
+  <img width="100" src="./vird-icon.svg" alt="vird logo">
+</p>
 
 Vird is a great virtual DOM library that can extend rendering.
 
