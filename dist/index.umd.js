@@ -364,7 +364,7 @@
             const properties = Object.assign({}, this.virdNode.properties);
             if (config.binding) {
                 const mergeState = this.getParentState();
-                const replacer = (_, key, defaultValue = '') => key in mergeState
+                const replacer = (_, key, defaultValue = '') => mergeState[key] !== undefined
                     ? String(mergeState[key])
                     : defaultValue;
                 for (const key of Object.keys(properties)) {

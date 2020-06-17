@@ -284,7 +284,7 @@ export class VirdElement<T extends { [key: string]: any } = { [key: string]: any
       const mergeState = this.getParentState()
 
       const replacer = (_: string, key: string, defaultValue = '') =>
-        key in mergeState
+        mergeState[key] !== undefined
           ? String(mergeState[key])
           : defaultValue
 
