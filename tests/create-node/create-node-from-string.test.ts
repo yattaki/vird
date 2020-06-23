@@ -1,5 +1,5 @@
-import { VirdNode } from '../../src/vird-node/vird-node'
 import { createNodeFromString } from '../../src/create-node/create-node-from-string'
+import { VirdNode } from '../../src/vird-node/vird-node'
 import { randomText } from '../utils/random'
 
 describe('createNodeFromString', () => {
