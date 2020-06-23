@@ -10,7 +10,7 @@ const derivedMap = {
   release: ['develop', 'master']
 }
 
-async function selectBranch (message, branches, defaultBranch) {
+async function selectBranch(message, branches, defaultBranch) {
   const { branch } = await prompt({
     message,
     type: 'list',
@@ -22,13 +22,13 @@ async function selectBranch (message, branches, defaultBranch) {
   return branch
 }
 
-async function run () {
+async function run() {
   // get branches
   const stdBranches = await execPromise('git branch')
   const branches = stdBranches.stdout
     .trim()
     .split(/\s+/)
-    .filter((branch) => !/^\*$/.test(branch))
+    .filter(branch => !/^\*$/.test(branch))
 
   // checkout develop branch
   const std = await execPromise('git symbolic-ref --short HEAD')
@@ -54,7 +54,7 @@ async function run () {
   const argv = clOpts.getAll()
 
   if (!Object.keys(derivedMap).includes(type)) {
-    const filter = (branch) =>
+    const filter = branch =>
       new RegExp(`^(${Object.keys(derivedMap).join('|')})\\/`).test(branch)
 
     const filteredBranch = branches.filter(filter)
@@ -87,7 +87,7 @@ async function run () {
     (argv.delete && argv.name === nowBranch)
   ) {
     const filteredBranch = argv.delete
-      ? branches.filter((branch) => branch !== argv.name)
+      ? branches.filter(branch => branch !== argv.name)
       : branches
     const checkoutBranch = await selectBranch(
       'Pick a checkout branch.',

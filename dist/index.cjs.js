@@ -2,435 +2,205 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-const virdNodeTypes = Object.defineProperties({}, {
-    text: { value: '#text' },
-    comment: { value: '#comment' },
-    fragment: { value: '#document-fragment' }
-});
+const virdEventListenerMap = new WeakMap();
+const listenerOptionsMap = new WeakMap();
+function addVirdEvent(virdNode, type, listener, options) {
+    let eventListenerMap = virdEventListenerMap.get(virdNode);
+    if (!eventListenerMap) {
+        eventListenerMap = new Map();
+        virdEventListenerMap.set(virdNode, eventListenerMap);
+    }
+    let events = eventListenerMap.get(type);
+    if (!events) {
+        events = new Set();
+        eventListenerMap.set(type, events);
+    }
+    events.add(listener);
+    listenerOptionsMap.set(listener, options);
+}
+function getVirdEventMap(virdNode) {
+    const result = {};
+    const eventListenerMap = virdEventListenerMap.get(virdNode);
+    if (eventListenerMap) {
+        for (const [key, listeners] of eventListenerMap) {
+            result[key] = [];
+            for (const listener of listeners) {
+                const options = listenerOptionsMap.get(listener);
+                result[key].push({ listener, options });
+            }
+        }
+    }
+    return result;
+}
+function cloneVirdEvent(copyVirdNode, masterVirdNode) {
+    const eventListenerMap = virdEventListenerMap.get(masterVirdNode);
+    if (!eventListenerMap)
+        return;
+    for (const [key, events] of eventListenerMap) {
+        for (const event of events) {
+            addVirdEvent(copyVirdNode, key, event);
+        }
+    }
+}
 
-function cloneVirdNode(virdNode, deep = false) {
+const virdNodeTypes = {
+    text: '#text',
+    comment: '#comment',
+    fragment: '#document-fragment'
+};
+
+function createNodeFromString(type, properties = {}, children = []) {
+    type = type.toLocaleLowerCase();
+    properties = Object.assign({}, properties);
+    children = [...children];
+    if (!properties.textContent &&
+        (virdNodeTypes.text === type || virdNodeTypes.comment === type)) {
+        properties.textContent = '';
+    }
+    return { type, properties, children };
+}
+
+/**
+ * This cloneNode() function duplicates VirdNode.
+ * @param virdNode VirdNode to duplicate.
+ * @param options
+ */
+function cloneNode(virdNode, options = {}) {
+    if (typeof options === 'boolean') {
+        options = { deep: options, event: options };
+    }
+    const { deep = false, event = false } = options;
     const type = virdNode.type;
     const properties = Object.assign({}, virdNode.properties);
-    const children = deep ? virdNode.children.map(child => cloneVirdNode(child)) : [];
-    return { type, properties, children };
+    const children = deep
+        ? virdNode.children.map(child => cloneNode(child, options))
+        : [];
+    const cloneVirdNode = createNodeFromString(type, properties, children);
+    if (event) {
+        cloneVirdEvent(cloneVirdNode, virdNode);
+    }
+    return cloneVirdNode;
 }
-function createVirdText(text = '') {
-    const type = virdNodeTypes.text;
-    const properties = { textContent: text };
-    const children = [];
-    return { type, properties, children };
+
+function parseVirdProperties(params) {
+    const result = {
+        events: {},
+        properties: {}
+    };
+    for (const key of Object.keys(params)) {
+        const value = params[key];
+        if (typeof value === 'string') {
+            result.properties[key] = value;
+        }
+        else if (value) {
+            result.events[key] = value;
+        }
+    }
+    return result;
 }
-function createVirdComment(comment = '') {
-    const type = virdNodeTypes.comment;
-    const properties = { textContent: comment };
-    const children = [];
-    return { type, properties, children };
-}
-function createVirdFragment(...children) {
-    const type = virdNodeTypes.fragment;
+
+function createNodeFromNode(node, deep = false) {
+    const type = node.nodeName;
     const properties = {};
-    return { type, properties, children };
-}
-function createVirdNode(type, properties, children) {
-    if (typeof properties !== 'object' || Array.isArray(properties)) {
-        children = properties;
-        properties = {};
+    if (node instanceof Element) {
+        for (const { name, value } of node.attributes) {
+            properties[name] = value;
+        }
     }
-    let addChildren;
-    if (typeof children === 'string') {
-        addChildren = [createVirdText(children)];
+    else if (node instanceof Comment || node instanceof Text) {
+        properties.textContent = node.textContent || '';
     }
-    else if (Array.isArray(children)) {
-        addChildren = children.map(child => typeof child === 'string' ? createVirdText(child) : child);
-    }
-    else {
-        addChildren = [];
-    }
-    return { type, properties, children: addChildren };
+    const mapCallback = (child) => createNodeFromNode(child, deep);
+    const children = deep ? [...node.childNodes].map(mapCallback) : [];
+    return createNodeFromString(type, properties, children);
 }
 
-const config = { binding: null };
-function setBindingConfig(startBracket, space, endBracket) {
-    if (startBracket instanceof RegExp) {
-        config.binding = startBracket;
-        return;
-    }
-    if (!endBracket) {
-        endBracket = space || startBracket;
-    }
-    if (!space) {
-        space = ':';
-    }
-    config.binding = new RegExp(`${startBracket}\\s*([^\\s${space}${endBracket}]+)(?:\\s*${space}\\s*((?:[^\\s${endBracket}]|\\s+[^${endBracket}])*))?\\s*${endBracket}`, 'g');
-}
-setBindingConfig('{', ':', '}');
-
-class EventHandler {
-    constructor() {
-        this._map = new Map();
-    }
-    /**
-     * Add a new listener.
-     * @param type This represents the name of the event.
-     * @param listener This represents the listener to add.
-     * @param options Specifies characteristics about the event listener.
-     */
-    addEventListener(type, listener, options = {}) {
-        let onMaps = this._map.get(type);
-        if (!onMaps) {
-            onMaps = [];
-            this._map.set(type, onMaps);
-        }
-        let isAdd = true;
-        for (const onMap of onMaps) {
-            if (onMap.listener === listener) {
-                onMap.options = options;
-                isAdd = false;
-                break;
+function createNode(base, propertiesOrChildrenOrTrim, childrenOrTrim, trim) {
+    // create virdNode
+    const virdNode = typeof base === 'string'
+        ? createNodeFromString(base)
+        : base instanceof Node
+            ? createNodeFromNode(base, true)
+            : cloneNode(base, { deep: true });
+    // add properties
+    if (typeof propertiesOrChildrenOrTrim === 'object' &&
+        !Array.isArray(propertiesOrChildrenOrTrim)) {
+        const { events, properties } = parseVirdProperties(propertiesOrChildrenOrTrim);
+        virdNode.properties = Object.assign(Object.assign({}, virdNode.properties), properties);
+        // add events
+        for (const key of Object.keys(events)) {
+            const value = events[key];
+            if (typeof value === 'function') {
+                addVirdEvent(virdNode, key, value);
+            }
+            else {
+                addVirdEvent(virdNode, key, value.listener, value.options);
             }
         }
-        if (isAdd) {
-            onMaps.push({ listener, options });
-        }
-        return isAdd;
     }
-    /**
-     * Remove the listener.
-     * @param type This represents the name of the event.
-     * @param listener This represents the listener to remove.
-     */
-    removeEventListener(type, listener) {
-        const onMaps = this._map.get(type);
-        if (onMaps) {
-            let index = 0;
-            for (const onMap of onMaps) {
-                if (onMap.listener === listener) {
-                    onMaps.splice(index, 1);
-                    return true;
-                }
-                index++;
-            }
-        }
-        return false;
+    else if (propertiesOrChildrenOrTrim !== undefined) {
+        childrenOrTrim = propertiesOrChildrenOrTrim;
     }
-    /**
-     * Execute the registered event.
-     * @param type This represents the name of the event.
-     * @param data An object to be passed as an argument of the listener.
-     */
-    async dispatchEvent(type, data = {}) {
-        const promises = [];
-        const onMaps = this._map.get(type);
-        if (onMaps) {
-            for (const { listener, options } of [...onMaps]) {
-                const event = {
-                    type,
-                    target: this,
-                    data: { ...(options.data || {}), ...data }
-                };
-                const promise = listener(event);
-                promises.push(promise);
-                if (options.once) {
-                    this.removeEventListener(type, listener);
-                }
-                if (options.wait) {
-                    await promise;
-                }
-            }
-        }
-        await Promise.all(promises);
-    }
-}
-
-class VirdElement extends EventHandler {
-    constructor(virdNode) {
-        super();
-        this._parent = null;
-        this._children = [];
-        this._state = {};
-        this.acceptParentState = false;
-        if (virdNode instanceof VirdElement) {
-            this.virdNode = virdNode.virdNode;
-            virdNode.addEventListener('update', () => { this.update(); });
+    // add children
+    if (typeof childrenOrTrim === 'string') {
+        const lastTypes = [virdNodeTypes.text, virdNodeTypes.comment];
+        if (lastTypes.includes(virdNode.type)) {
+            virdNode.properties.textContent = childrenOrTrim;
         }
         else {
-            this.virdNode = cloneVirdNode(virdNode);
+            virdNode.children = [
+                createNodeFromString('#text', { textContent: childrenOrTrim })
+            ];
         }
-        this.setChildren(virdNode.children.map((child) => child instanceof VirdElement
-            ? child
-            : new VirdElement(child)));
-        this.addEventListener('mount', (e) => {
-            for (const child of this.children) {
-                child.dispatchEvent('unmount', { parent: e.data.parent });
-            }
-        });
-        this.addEventListener('unmount', (e) => {
-            for (const child of this.children) {
-                child.dispatchEvent('unmount', { parent: e.data.parent });
-            }
+    }
+    else if (Array.isArray(childrenOrTrim)) {
+        virdNode.children = childrenOrTrim.map(stringOrVirdNode => {
+            return typeof stringOrVirdNode === 'string'
+                ? createNodeFromString('#text', { textContent: stringOrVirdNode })
+                : stringOrVirdNode;
         });
     }
-    insertAfter(beforeChild, ...children) {
-        const newChildren = this.children;
-        let index;
-        if (beforeChild) {
-            index = newChildren.indexOf(beforeChild) + 1;
-            if (index < 1) {
-                throw Error('The VirdElement before which the new VirdElement is to be inserted is not a child of this VirdElement.');
+    else if (childrenOrTrim !== undefined) {
+        trim = childrenOrTrim;
+    }
+    // trimming
+    if (trim) {
+        virdNode.children = virdNode.children.filter(child => {
+            if (child.type === virdNodeTypes.comment)
+                return false;
+            if (child.type === virdNodeTypes.text) {
+                if (child.properties.textContent === undefined)
+                    return false;
+                if (!/^\s*$/.test(child.properties.textContent))
+                    return false;
             }
-        }
-        else {
-            index = newChildren.length;
-        }
-        newChildren.splice(index, 0, ...children);
-        this.setChildren(newChildren);
-        this.dispatchEvent('insert-children', { children, index });
-        return this;
+            return true;
+        });
     }
-    insertBefore(afterChild, ...children) {
-        return this.insertAfter(afterChild ? afterChild.prev : this.firstChild, ...children);
-    }
-    appendChild(...children) {
-        return this.insertAfter(null, ...children);
-    }
-    removeChild(...children) {
-        const newChildren = this.children;
-        for (const child of children) {
-            if (!newChildren.includes(child)) {
-                throw Error('The VirdElement to be removed is not a child of this VirdElement.');
-            }
-        }
-        this.setChildren(newChildren.filter((child) => !children.includes(child)));
-        this.dispatchEvent('remove-children', { children });
-        return this;
-    }
-    remove() {
-        const parent = this.parent;
-        if (parent) {
-            parent.removeChild(this);
-        }
-        return this;
-    }
-    clearChildren() {
-        this.setChildren([]);
-        return this;
-    }
-    setChildren(children) {
-        const beforeChildren = this.children;
-        this._children = children;
-        this.virdNode.children = this.children.map((child) => child.virdNode);
-        for (const child of beforeChildren) {
-            if (children.includes(child)) {
-                continue;
-            }
-            child._parent = null;
-            this.dispatchEvent('unmount', { parent: this });
-        }
-        for (const child of children) {
-            if (beforeChildren.includes(child)) {
-                continue;
-            }
-            child._parent = this;
-            this.dispatchEvent('mount', { parent: this });
-        }
-        this.update();
-        return beforeChildren;
-    }
-    clone(deep = false) {
-        const virdNode = cloneVirdNode(this.virdNode, deep);
-        const virdElement = new VirdElement(virdNode);
-        virdElement.setState(this.state, false);
-        return virdElement;
-    }
-    getVirdElements(getter, includeThis = false) {
-        const hitVirdElements = [];
-        if (includeThis && getter(this)) {
-            hitVirdElements.push(this);
-        }
-        for (const child of this.children) {
-            if (getter(child)) {
-                hitVirdElements.push(child);
-            }
-            const childHits = child.getVirdElements(getter);
-            if (childHits.length > 0) {
-                hitVirdElements.push(...childHits);
-            }
-        }
-        return hitVirdElements;
-    }
-    update() {
-        this.dispatchEvent('update');
-    }
-    setProperties(properties, update = true) {
-        const beforeProperties = this.virdNode.properties;
-        for (const key of Object.keys(properties)) {
-            if (this.state[key] === beforeProperties[key]) {
-                continue;
-            }
-            this.virdNode.properties = Object.assign(Object.assign({}, this.virdNode.properties), properties);
-            break;
-        }
-        if (update && beforeProperties !== this.virdNode.properties) {
-            this.update();
-        }
-    }
-    setState(state, update = true) {
-        const beforeState = this._state;
-        for (const key of Object.keys(state)) {
-            if (this.state[key] === state[key]) {
-                continue;
-            }
-            this._state = Object.assign(Object.assign({}, this.state), state);
-            break;
-        }
-        if (update && beforeState !== this._state) {
-            this.update();
-        }
-    }
-    getParentState(deep = true) {
-        const parentStates = [this.state];
-        const pushParentState = (virdElement) => {
-            if (!virdElement) {
-                return;
-            }
-            parentStates.push(virdElement.state);
-            if (!deep || !virdElement.acceptParentState) {
-                return;
-            }
-            pushParentState(virdElement.parent);
-        };
-        pushParentState(this.parent);
-        let catchState = {};
-        for (const parentState of parentStates) {
-            catchState = Object.assign(Object.assign({}, parentState), catchState);
-        }
-        return catchState;
-    }
-    setAcceptParentStateOfChildren(bool) {
-        for (const child of this.children) {
-            child.acceptParentState = bool;
-            child.setAcceptParentStateOfChildren(bool);
-        }
-    }
-    get parent() {
-        return this._parent;
-    }
-    get children() {
-        return [...this._children];
-    }
-    set children(value) {
-        this.setChildren(value);
-    }
-    get firstChild() {
-        return (this.children[0] || null);
-    }
-    get lastChild() {
-        const children = this.children;
-        return (children[children.length - 1] || null);
-    }
-    get next() {
-        const parent = this.parent;
-        if (!parent) {
-            return null;
-        }
-        const children = parent.children;
-        return children[children.indexOf(this) + 1] || null;
-    }
-    get prev() {
-        const parent = this.parent;
-        if (!parent) {
-            return null;
-        }
-        const children = parent.children;
-        return children[children.indexOf(this) - 1] || null;
-    }
-    get state() {
-        return this._state;
-    }
-    set state(value) {
-        this._state = value;
-    }
-    get type() {
-        return this.virdNode.type;
-    }
-    set type(value) {
-        this.virdNode.type = value;
-        this.update();
-    }
-    get properties() {
-        let resultProperties = {};
-        const properties = Object.assign({}, this.virdNode.properties);
-        if (config.binding) {
-            const mergeState = this.getParentState();
-            const replacer = (_, key, defaultValue = '') => mergeState[key] !== undefined
-                ? String(mergeState[key])
-                : defaultValue;
-            for (const key of Object.keys(properties)) {
-                const value = properties[key];
-                resultProperties[key] = value.replace(config.binding, replacer);
-            }
-        }
-        else {
-            resultProperties = properties;
-        }
-        return resultProperties;
-    }
-    set properties(value) {
-        this.virdNode.properties = value;
-        this.update();
-    }
+    return virdNode;
 }
 
-function createNode(nodeOrType, propertiesOrTrim = false, children) {
-    if (typeof nodeOrType === 'string') {
-        if (typeof propertiesOrTrim === 'boolean') {
-            propertiesOrTrim = {};
-        }
-        return createVirdNode(nodeOrType, propertiesOrTrim, children);
+function createRealNode(virdNode) {
+    switch (virdNode.type) {
+        case virdNodeTypes.text:
+            return document.createTextNode(virdNode.properties.textContent || '');
+        case virdNodeTypes.comment:
+            return document.createComment(virdNode.properties.textContent || '');
+        default:
+            return document.createElement(virdNode.type);
     }
-    else {
-        const node = nodeOrType;
-        const type = node.nodeName.toLocaleLowerCase();
-        const properties = {};
-        if (node instanceof Element) {
-            for (const { name, value } of node.attributes) {
-                properties[name] = value;
-            }
-        }
-        else if (!(node instanceof DocumentFragment)) {
-            properties.textContent = node.textContent || '';
-        }
-        const trim = !!propertiesOrTrim;
-        let children = [...node.childNodes].map(node => createNode(node, trim));
-        if (trim) {
-            const filter = (virdNode) => virdNode.type !== virdNodeTypes.comment &&
-                (virdNode.type !== virdNodeTypes.text || !/^\s*$/.test(virdNode.properties.textContent));
-            children = children.filter(filter);
-        }
-        return createVirdNode(type, properties, children);
-    }
-}
-function createElement(nodeOrType, propertiesOrTrim, children) {
-    if (Array.isArray(propertiesOrTrim)) {
-        children = propertiesOrTrim;
-        propertiesOrTrim = {};
-    }
-    const virdNode = createNode(nodeOrType, propertiesOrTrim, Array.isArray(children)
-        ? children.map(child => child instanceof VirdElement ? child.virdNode : child)
-        : children);
-    return new VirdElement(virdNode);
 }
 
 function diff(checkObject, comparisonObjet) {
     const diffObject = {};
     if (checkObject !== comparisonObjet) {
         if (checkObject) {
+            const checkObjectKey = Object.keys(checkObject);
             if (comparisonObjet) {
-                const checkObjectKeys = Object.keys(checkObject);
-                const comparisonObjetKeys = Object.keys(comparisonObjet);
+                const comparisonObjetKey = Object.keys(comparisonObjet);
                 const keys = new Set([
-                    ...checkObjectKeys,
-                    ...comparisonObjetKeys
+                    ...checkObjectKey,
+                    ...comparisonObjetKey
                 ]);
                 for (const key of keys) {
                     const checkObjetValue = checkObject[key];
@@ -442,7 +212,7 @@ function diff(checkObject, comparisonObjet) {
                 }
             }
             else {
-                for (const key of Object.keys(checkObject)) {
+                for (const key of checkObjectKey) {
                     const value = checkObject[key];
                     diffObject[key] = [value, undefined];
                 }
@@ -450,7 +220,8 @@ function diff(checkObject, comparisonObjet) {
         }
         else {
             if (comparisonObjet) {
-                for (const key of Object.keys(comparisonObjet)) {
+                const comparisonObjetKey = Object.keys(comparisonObjet);
+                for (const key of comparisonObjetKey) {
                     const value = comparisonObjet[key];
                     diffObject[key] = [undefined, value];
                 }
@@ -460,11 +231,101 @@ function diff(checkObject, comparisonObjet) {
     return diffObject;
 }
 
-function clearFragmentNode(virdNodes) {
+const beforeVirdNodes = new WeakMap();
+const nodeMap = new WeakMap();
+function diffRender(rootNode, newVirdNodes) {
+    const oldVirdNodes = beforeVirdNodes.get(rootNode) ||
+        [...rootNode.childNodes].map(child => createNode(child));
+    beforeVirdNodes.set(rootNode, newVirdNodes);
+    let index = 0;
+    let newVirdNodeIndex = 0;
+    let oldVirdNodeIndex = 0;
+    const newVirdNodeLength = newVirdNodes.length;
+    const oldVirdNodeLength = oldVirdNodes.length;
+    const maxIndex = Math.max(newVirdNodeLength, oldVirdNodeLength);
+    while (index < maxIndex) {
+        const newVirdNode = newVirdNodes[newVirdNodeIndex];
+        const oldVirdNode = oldVirdNodes[oldVirdNodeIndex];
+        const oldNode = oldVirdNode && nodeMap.get(oldVirdNode);
+        if (newVirdNode) {
+            let nextNode = oldNode;
+            if (!oldVirdNode || oldVirdNode.type !== newVirdNode.type) {
+                const realNode = createRealNode(newVirdNode);
+                nextNode = realNode;
+                if (oldNode) {
+                    beforeVirdNodes.delete(oldNode);
+                    if (newVirdNodeLength > oldVirdNodeLength) {
+                        rootNode.insertBefore(realNode, oldNode);
+                        oldVirdNodeIndex--;
+                    }
+                    else if (newVirdNodeLength < oldVirdNodeLength) {
+                        rootNode.removeChild(oldNode);
+                        newVirdNodeIndex--;
+                    }
+                    else {
+                        rootNode.replaceChild(realNode, oldNode);
+                    }
+                }
+                else {
+                    rootNode.appendChild(realNode);
+                }
+            }
+            if (nextNode) {
+                nodeMap.set(newVirdNode, nextNode);
+                const diffProperties = diff(newVirdNode.properties, oldVirdNode && oldVirdNode.properties);
+                if (nextNode instanceof Element) {
+                    for (const name of Object.keys(diffProperties)) {
+                        const newValue = diffProperties[name];
+                        const value = newValue && newValue[0];
+                        if (value) {
+                            nextNode.setAttribute(name, value);
+                        }
+                        else {
+                            nextNode.removeAttribute(name);
+                        }
+                    }
+                    if (oldVirdNode) {
+                        const oldEventMap = getVirdEventMap(oldVirdNode);
+                        for (const name of Object.keys(oldEventMap)) {
+                            const eventMap = oldEventMap[name];
+                            for (const { listener } of eventMap) {
+                                nextNode.removeEventListener(name, listener);
+                            }
+                        }
+                    }
+                    const oldEventMap = getVirdEventMap(newVirdNode);
+                    for (const name of Object.keys(oldEventMap)) {
+                        const eventMap = oldEventMap[name];
+                        for (const { listener, options } of eventMap) {
+                            nextNode.addEventListener(name, listener, options);
+                        }
+                    }
+                }
+                else {
+                    if (diffProperties.textContent) {
+                        nextNode.textContent = diffProperties.textContent[0] || '';
+                    }
+                }
+                diffRender(nextNode, newVirdNode.children);
+            }
+        }
+        else if (oldNode) {
+            const parent = oldNode.parentElement;
+            if (parent) {
+                parent.removeChild(oldNode);
+            }
+        }
+        index++;
+        newVirdNodeIndex++;
+        oldVirdNodeIndex++;
+    }
+}
+
+function filterIgnoreVirdNode(virdNodes) {
     const result = [];
     for (const virdNode of virdNodes) {
         if (virdNode.type === virdNodeTypes.fragment) {
-            const children = clearFragmentNode(virdNode.children);
+            const children = filterIgnoreVirdNode(virdNode.children);
             result.push(...children);
         }
         else {
@@ -473,192 +334,18 @@ function clearFragmentNode(virdNodes) {
     }
     return result;
 }
-
-class Renderer {
-    constructor() {
-        this._renderMap = new Map();
-        this._oldVirdNodeMap = new Map();
-        this._nodeCreatorMap = new WeakMap();
-        this._propertyTypeBinderMap = new Map();
-        this._propertyTypeRegExpBinderMap = new Map();
-        this._customNodeCreatorMap = new Map();
-        this.setCustomNode(virdNodeTypes.text, () => document.createTextNode(''));
-        this.setCustomNode(virdNodeTypes.comment, () => document.createComment(''));
-        this.setCustomNode(virdNodeTypes.fragment, () => document.createDocumentFragment());
-        this.setPropertyTypeBind('textContent', (node, value) => { node.textContent = value.newValue || ''; });
-    }
-    _updateProperties(node, newProperties, oldProperties) {
-        const diffObject = diff(newProperties, oldProperties);
-        for (const type of Object.keys(diffObject)) {
-            const [newValue, oldValue] = diffObject[type];
-            let isMatch = false;
-            for (const [regExp, propertyTypeRegExpBinder] of this._propertyTypeRegExpBinderMap) {
-                const matchArray = type.match(regExp);
-                if (matchArray) {
-                    isMatch = true;
-                    propertyTypeRegExpBinder(node, matchArray, { newValue, oldValue });
-                    break;
-                }
-            }
-            if (!isMatch) {
-                const propertyTypeBinder = this._propertyTypeBinderMap.get(type);
-                if (propertyTypeBinder) {
-                    propertyTypeBinder(node, { newValue, oldValue });
-                }
-                else if (node instanceof Element) {
-                    if (newValue) {
-                        node.setAttribute(type, newValue);
-                    }
-                    else {
-                        node.removeAttribute(type);
-                    }
-                }
-            }
-        }
-    }
-    render(node, ...renderItems) {
-        const renderVirdNodes = renderItems.map(item => typeof item === 'function' ? item(node) : item);
-        const newVirdNodes = clearFragmentNode(renderVirdNodes);
-        const oldVirdNodes = this.getChildrenVirdNode(node);
-        const childNodes = [...node.childNodes];
-        this._renderMap.set(node, renderVirdNodes);
-        const oldVirdNodeItems = newVirdNodes
-            .map(virdNode => cloneVirdNode(virdNode instanceof VirdElement ? virdNode.virdNode : virdNode));
-        this._oldVirdNodeMap.set(node, oldVirdNodeItems);
-        let i = 0;
-        const maxIndex = Math.max(childNodes.length, newVirdNodes.length);
-        while (i < maxIndex) {
-            const oldVirdNode = (oldVirdNodes[i] || null);
-            const newVirdNode = (newVirdNodes[i] || null);
-            const childNode = (childNodes[i] || null);
-            let newNode = null;
-            if (newVirdNode) {
-                if (newVirdNode instanceof VirdElement) {
-                    newVirdNode.addEventListener('update', () => { this.reRender(node); });
-                }
-                if (!oldVirdNode || oldVirdNode.type !== newVirdNode.type) {
-                    newNode = this.createNode(newVirdNode);
-                    if (childNode) {
-                        node.replaceChild(newNode, childNode);
-                    }
-                    else {
-                        node.appendChild(newNode);
-                    }
-                }
-                else {
-                    newNode = childNode;
-                }
-            }
-            else {
-                if (childNode) {
-                    node.removeChild(childNode);
-                }
-            }
-            if (newNode) {
-                this._updateProperties(newNode, newVirdNode ? newVirdNode.properties : undefined, oldVirdNode ? oldVirdNode.properties : undefined);
-                if (newVirdNode && newVirdNode.children.length > 0) {
-                    this.render(newNode, ...newVirdNode.children);
-                }
-            }
-            i++;
-        }
-        return newVirdNodes;
-    }
-    renderDom(node, trim = false) {
-        const virdNodes = createNode(node, trim).children;
-        return this.render(node, ...virdNodes);
-    }
-    reRender(node) {
-        const virdNodes = this._renderMap.get(node);
-        if (virdNodes) {
-            this.render(node, ...virdNodes);
-        }
-    }
-    createDispatcher(node) {
-        return async (beforeCallback) => {
-            if (beforeCallback) {
-                await beforeCallback();
-            }
-            this.reRender(node);
-        };
-    }
-    createEffect(node, effect) {
-        const dispatcher = this.createDispatcher(node);
-        return {
-            runEffect(value) {
-                dispatcher(async () => { effect(value); });
-            }
-        };
-    }
-    createNode(virdNode) {
-        let createNode;
-        const beforeCreator = createNode ? this._nodeCreatorMap.get(createNode) : undefined;
-        const creator = this._customNodeCreatorMap.get(virdNode.type);
-        if (beforeCreator !== creator && creator) {
-            createNode = creator(virdNode);
-        }
-        if (!createNode) {
-            createNode = document.createElement(virdNode.type);
-        }
-        return createNode;
-    }
-    clone() {
-        const renderer = new Renderer();
-        for (const [regExp, binder] of this._propertyTypeRegExpBinderMap) {
-            renderer.setPropertyTypeRegExpBind(regExp, binder);
-        }
-        for (const [type, binder] of this._propertyTypeBinderMap) {
-            renderer.setPropertyTypeBind(type, binder);
-        }
-    }
-    getChildrenVirdNode(node) {
-        return this._oldVirdNodeMap.get(node) || [];
-    }
-    setCustomNode(type, creator) {
-        this._customNodeCreatorMap.set(type, creator);
-        return this;
-    }
-    removeCustomNode(type) {
-        this._customNodeCreatorMap.delete(type);
-        return this;
-    }
-    setPropertyTypeRegExpBind(regExp, binder) {
-        this.removePropertyTypeRegExpBind(regExp);
-        this._propertyTypeRegExpBinderMap.set(regExp, binder);
-        return this;
-    }
-    removePropertyTypeRegExpBind(regExp) {
-        for (const key of this._propertyTypeRegExpBinderMap.keys()) {
-            if (String(key) !== String(regExp)) {
-                continue;
-            }
-            this._propertyTypeRegExpBinderMap.delete(regExp);
-            break;
-        }
-        return this;
-    }
-    setPropertyTypeBind(type, binder) {
-        this._propertyTypeBinderMap.set(type, binder);
-        return this;
-    }
-    removePropertyTypeBind(type) {
-        this._propertyTypeBinderMap.delete(type);
-        return this;
-    }
+function render(rootNode, ...virdNodes) {
+    const newVirdNodeLength = virdNodes.length;
+    if (newVirdNodeLength < 1)
+        return;
+    // Create a VirdNode for rendering.
+    const clone = (virdNode) => cloneNode(virdNode, true);
+    const newVirdNodes = filterIgnoreVirdNode(virdNodes).map(clone);
+    // rendering.
+    diffRender(rootNode, newVirdNodes);
 }
-const renderer = new Renderer();
 
-exports.Renderer = Renderer;
-exports.VirdElement = VirdElement;
-exports.cloneVirdNode = cloneVirdNode;
-exports.config = config;
-exports.createElement = createElement;
+exports.cloneNode = cloneNode;
 exports.createNode = createNode;
-exports.createVirdComment = createVirdComment;
-exports.createVirdFragment = createVirdFragment;
-exports.createVirdNode = createVirdNode;
-exports.createVirdText = createVirdText;
-exports.renderer = renderer;
-exports.setBindingConfig = setBindingConfig;
-exports.virdNodeTypes = virdNodeTypes;
+exports.render = render;
 //# sourceMappingURL=index.cjs.js.map

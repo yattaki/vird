@@ -21,7 +21,7 @@ async function commitMessage() {
   return comment
 }
 
-execPromise('git diff --name-only').then(async (std) => {
+execPromise('git diff --name-only').then(async std => {
   const files = std.stdout.split(/\s+/).filter(Boolean)
   const { addFiles, type, tag } = await prompt([
     {

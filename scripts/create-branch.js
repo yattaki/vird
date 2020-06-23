@@ -76,14 +76,14 @@ async function run() {
   const branches = stdBranches.stdout
     .trim()
     .split(/\s+/)
-    .filter((branch) => !/^\*$/.test(branch))
+    .filter(branch => !/^\*$/.test(branch))
 
   // update type
   if (argv.type === '') await updateType()
   if (!Object.keys(derivedMap).includes(argv.type)) {
     const types = Object.keys(derivedMap)
       .sort()
-      .map((type) => `'${type}'`)
+      .map(type => `'${type}'`)
     const lastType = types.pop()
 
     const typesMessage = `${types.join(', ')} or ${lastType}`
