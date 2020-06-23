@@ -8,7 +8,7 @@ const derivedMap = {
   hotfix: 'master'
 }
 
-const checkNameRegExp = /^(#\d+)?[a-z][a-z\d-]+[a-z\d]$/
+const checkNameRegExp = /^(#\d+)?[a-z][.a-z\d-]+[a-z\d]$/
 
 const argv = new ClOpts({
   name: {

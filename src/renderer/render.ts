@@ -18,6 +18,11 @@ function filterIgnoreVirdNode(virdNodes: VirdNode[]) {
   return result
 }
 
+/**
+ * The render() function renders a VirdNode into a Dom.
+ * @param rootNode A node to render.
+ * @param virdNodes An array of VirdNode objects to render.
+ */
 export function render(rootNode: Node, ...virdNodes: VirdNode[]) {
   const newVirdNodeLength = virdNodes.length
   if (newVirdNodeLength < 1) return

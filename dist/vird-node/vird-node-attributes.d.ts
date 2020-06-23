@@ -37,4 +37,4 @@ export interface VirdFormNodeAttributes extends VirdNodeAcceptAttributes, VirdNo
     method: string;
     novalidate: string;
 }
-export {};
+export { };

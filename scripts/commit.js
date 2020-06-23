@@ -12,7 +12,7 @@ async function commitMessage() {
     message: 'Commit message : '
   })
 
-  if (!/^[A-Z][a-zA-Z ]+[a-z]$/.test(comment)) {
+  if (!/^[a-z][a-zA-Z0-9 .]+[a-z0-9]$/.test(comment)) {
     const message = `The comment '${comment}' cannot be used.`
     console.log(chalk.red(message))
     return commitMessage()

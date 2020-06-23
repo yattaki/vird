@@ -1,6 +1,10 @@
 import { VirdNode } from '../vird-node/vird-node'
 import { virdNodeTypes } from '../vird-node/vird-node-types'
 
+/**
+ * The createRealNode() function creates a node from VirdNode.
+ * @param virdNode The VirdNode object from which it is created.
+ */
 export function createRealNode(virdNode: VirdNode) {
   switch (virdNode.type) {
     case virdNodeTypes.text:

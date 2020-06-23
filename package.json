@@ -9,6 +9,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "merge": "node scripts/merge.js",
+    "commit": "node scripts/commit.js",
     "create-branch": "node scripts/create-branch.js",
     "types": "tsc --emitDeclarationOnly --declaration --outDir dist",
     "eslint": "eslint src/index.ts",
