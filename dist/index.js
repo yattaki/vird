@@ -378,6 +378,7 @@ function diffRender(rootNode, newVirdNodes) {
 function filterIgnoreVirdNode(virdNodes) {
     const result = [];
     for (const virdNode of virdNodes) {
+        virdNode.children = filterIgnoreVirdNode(virdNode.children);
         if (virdNode.type === virdNodeTypes.fragment) {
             const children = filterIgnoreVirdNode(virdNode.children);
             result.push(...children);
