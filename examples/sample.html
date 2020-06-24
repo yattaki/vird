@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script type="module" src="./sample.js" async defer></script>
+
+  <title>Vird example</title>
+
+  <style>
+    .render-debug * {
+      animation: render-animation 1s 0s;
+    }
+
+    @keyframes render-animation {
+      0% {
+        background-color: rgba(186, 0, 13, 0.5);
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <div><button id="run">run</button></div>
+  <div id="root" class="render-debug"></div>
+  <div id="base">
+    text 1
+    <!-- comment 1 -->
+    <div>div text</div>
+    <div class="test" data-test="test">div text in style</div>
+    <div>
+      div test 1
+      <div>
+        div test 2
+        <div>
+          div test 3
+        </div>
+      </div>
+    </div>
+    <!-- comment 2 -->
+
+    <ul>
+      <li>list test 1</li>
+      <li>list test 2</li>
+      <li id="change">list test 3</li>
+    </ul>
+    <!-- comment 3 -->
+  </div>
+</body>
+</html>

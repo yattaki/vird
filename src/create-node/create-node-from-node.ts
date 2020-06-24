@@ -38,6 +38,10 @@ export function createNodeFromNode(node: Node, deep = false): VirdNode {
     for (const { name, value } of node.attributes) {
       properties[name] = value
     }
+
+    if ('value' in node) {
+      properties.value = (node as HTMLInputElement).value
+    }
   } else if (node instanceof Comment || node instanceof Text) {
     properties.textContent = node.textContent || ''
   }

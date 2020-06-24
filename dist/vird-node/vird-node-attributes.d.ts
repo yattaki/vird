@@ -14,21 +14,21 @@ export interface VirdNodeAttributes extends VirdTextContentAttributes {
     accesskey: string;
     autocapitalize: 'off' | 'none' | 'on' | 'sentences' | 'words' | 'characters';
     class: string;
-    contenteditable: 'true' | 'false' | '';
+    contenteditable: 'true' | 'false' | '' | boolean;
     dir: 'ltr' | 'rtl' | 'auto';
-    draggable: 'true' | 'false';
+    draggable: 'true' | 'false' | boolean;
     dropzone: string;
-    hidden: '';
+    hidden: '' | null;
     id: string;
     itemprop: string;
     lang: string;
     slot: string;
-    spellcheck: 'true' | 'false';
+    spellcheck: 'true' | 'false' | boolean;
     style: string;
     tabindex: string;
     title: string;
     translate: 'yes' | 'no' | '';
-    [key: string]: string;
+    [key: string]: string | number | boolean | null | string[];
 }
 export interface VirdFormNodeAttributes extends VirdNodeAcceptAttributes, VirdNodeAutoCompleteAttributes, VirdNodeNameAttributes, VirdNodeAttributes {
     'accept-charset': string;
@@ -37,4 +37,4 @@ export interface VirdFormNodeAttributes extends VirdNodeAcceptAttributes, VirdNo
     method: string;
     novalidate: string;
 }
-export { };
+export {};

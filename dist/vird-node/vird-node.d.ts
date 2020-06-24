@@ -62,4 +62,4 @@ export interface VirdFormNode extends VirdNode {
     readonly: 'form';
     properties: Partial<VirdFormNodeAttributes>;
 }
-export { };
+export {};

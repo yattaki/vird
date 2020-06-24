@@ -14,19 +14,8 @@ function addVirdEvent(virdNode, type, listener, options) {
     events.add(listener);
     listenerOptionsMap.set(listener, options);
 }
-function getVirdEventMap(virdNode) {
-    const result = {};
-    const eventListenerMap = virdEventListenerMap.get(virdNode);
-    if (eventListenerMap) {
-        for (const [key, listeners] of eventListenerMap) {
-            result[key] = [];
-            for (const listener of listeners) {
-                const options = listenerOptionsMap.get(listener);
-                result[key].push({ listener, options });
-            }
-        }
-    }
-    return result;
+function clearVirdEvent(virdEvent) {
+    virdEventListenerMap.delete(virdEvent);
 }
 function cloneVirdEvent(copyVirdNode, masterVirdNode) {
     const eventListenerMap = virdEventListenerMap.get(masterVirdNode);
@@ -35,6 +24,26 @@ function cloneVirdEvent(copyVirdNode, masterVirdNode) {
     for (const [key, events] of eventListenerMap) {
         for (const event of events) {
             addVirdEvent(copyVirdNode, key, event);
+        }
+    }
+}
+function onEvent(node, virdNode) {
+    const eventListenerMap = virdEventListenerMap.get(virdNode);
+    if (eventListenerMap) {
+        for (const [name, eventMap] of eventListenerMap) {
+            for (const listener of eventMap) {
+                node.addEventListener(name, listener, listenerOptionsMap.get(listener));
+            }
+        }
+    }
+}
+function offEvent(node, virdNode) {
+    const eventListenerMap = virdEventListenerMap.get(virdNode);
+    if (eventListenerMap) {
+        for (const [name, eventMap] of eventListenerMap) {
+            for (const listener of eventMap) {
+                node.removeEventListener(name, listener);
+            }
         }
     }
 }
@@ -101,6 +110,9 @@ function createNodeFromNode(node, deep = false) {
     if (node instanceof Element) {
         for (const { name, value } of node.attributes) {
             properties[name] = value;
+        }
+        if ('value' in node) {
+            properties.value = node.value;
         }
     }
     else if (node instanceof Comment || node instanceof Text) {
@@ -176,17 +188,73 @@ function createNode(base, propertiesOrChildrenOrTrim, childrenOrTrim, trim) {
     return virdNode;
 }
 
-function createRealNode(virdNode) {
-    switch (virdNode.type) {
-        case virdNodeTypes.text:
-            return document.createTextNode(virdNode.properties.textContent || '');
-        case virdNodeTypes.comment:
-            return document.createComment(virdNode.properties.textContent || '');
-        default:
-            return document.createElement(virdNode.type);
+const reserves = [];
+
+function updateAttribute(element, name, value) {
+    if (value != null) {
+        const attrValue = Array.isArray(value) ? value.join(' ') : String(value);
+        switch (name) {
+            case 'value':
+                element.value = attrValue;
+                break;
+            default:
+                element.setAttribute(name, attrValue);
+                break;
+        }
+    }
+    else {
+        element.removeAttribute(name);
     }
 }
 
+const virdDom = new WeakMap();
+const nodeMap = new WeakMap();
+
+function createElement(virdNode) {
+    const element = document.createElement(virdNode.type);
+    for (const name of Object.keys(virdNode.properties)) {
+        updateAttribute(element, name, virdNode.properties[name]);
+    }
+    onEvent(element, virdNode);
+    const clone = (virdNode) => cloneNode(virdNode, true);
+    const cloneVirdNodes = virdNode.children.map(clone);
+    const fragment = document.createDocumentFragment();
+    for (const child of cloneVirdNodes) {
+        const childNode = createRealNode(child);
+        fragment.appendChild(childNode);
+    }
+    const renderingReserve = requestAnimationFrame(() => {
+        element.appendChild(fragment);
+        virdDom.set(element, cloneVirdNodes);
+    });
+    reserves.push(renderingReserve);
+    return element;
+}
+/**
+ * The createRealNode() function creates a node from VirdNode.
+ * @param virdNode The VirdNode object from which it is created.
+ */
+function createRealNode(virdNode) {
+    let node;
+    switch (virdNode.type) {
+        case virdNodeTypes.text:
+            node = document.createTextNode(virdNode.properties.textContent || '');
+            break;
+        case virdNodeTypes.comment:
+            node = document.createComment(virdNode.properties.textContent || '');
+            break;
+        default:
+            node = createElement(virdNode);
+    }
+    nodeMap.set(virdNode, node);
+    return node;
+}
+
+/**
+ * The diff () function gets the diff of an object.
+ * @param checkObject An object to compare the differences.
+ * @param comparisonObjet An object to compare.
+ */
 function diff(checkObject, comparisonObjet) {
     const diffObject = {};
     if (checkObject !== comparisonObjet) {
@@ -227,12 +295,15 @@ function diff(checkObject, comparisonObjet) {
     return diffObject;
 }
 
-const beforeVirdNodes = new WeakMap();
-const nodeMap = new WeakMap();
+function removeVirdDom(node) {
+    virdDom.delete(node);
+    for (const childNode of node.childNodes) {
+        removeVirdDom(childNode);
+    }
+}
 function diffRender(rootNode, newVirdNodes) {
-    const oldVirdNodes = beforeVirdNodes.get(rootNode) ||
+    const oldVirdNodes = virdDom.get(rootNode) ||
         [...rootNode.childNodes].map(child => createNode(child));
-    beforeVirdNodes.set(rootNode, newVirdNodes);
     let index = 0;
     let newVirdNodeIndex = 0;
     let oldVirdNodeIndex = 0;
@@ -244,65 +315,51 @@ function diffRender(rootNode, newVirdNodes) {
         const oldVirdNode = oldVirdNodes[oldVirdNodeIndex];
         const oldNode = oldVirdNode && nodeMap.get(oldVirdNode);
         if (newVirdNode) {
-            let nextNode = oldNode;
             if (!oldVirdNode || oldVirdNode.type !== newVirdNode.type) {
                 const realNode = createRealNode(newVirdNode);
-                nextNode = realNode;
                 if (oldNode) {
-                    beforeVirdNodes.delete(oldNode);
-                    if (newVirdNodeLength > oldVirdNodeLength) {
-                        rootNode.insertBefore(realNode, oldNode);
-                        oldVirdNodeIndex--;
-                    }
-                    else if (newVirdNodeLength < oldVirdNodeLength) {
-                        rootNode.removeChild(oldNode);
-                        newVirdNodeIndex--;
-                    }
-                    else {
-                        rootNode.replaceChild(realNode, oldNode);
+                    removeVirdDom(oldNode);
+                    const parent = oldNode.parentElement;
+                    if (parent === rootNode) {
+                        if (newVirdNodeLength > oldVirdNodeLength) {
+                            parent.insertBefore(realNode, oldNode);
+                            oldVirdNodeIndex--;
+                        }
+                        else if (newVirdNodeLength < oldVirdNodeLength) {
+                            parent.removeChild(oldNode);
+                            newVirdNodeIndex--;
+                        }
+                        else {
+                            parent.replaceChild(realNode, oldNode);
+                        }
                     }
                 }
                 else {
                     rootNode.appendChild(realNode);
                 }
             }
-            if (nextNode) {
-                nodeMap.set(newVirdNode, nextNode);
-                const diffProperties = diff(newVirdNode.properties, oldVirdNode && oldVirdNode.properties);
-                if (nextNode instanceof Element) {
+            else if (oldNode) {
+                nodeMap.delete(oldVirdNode);
+                nodeMap.set(newVirdNode, oldNode);
+                const diffProperties = diff(newVirdNode.properties, oldVirdNode.properties);
+                if (oldNode instanceof Element) {
                     for (const name of Object.keys(diffProperties)) {
                         const newValue = diffProperties[name];
                         const value = newValue && newValue[0];
-                        if (value) {
-                            nextNode.setAttribute(name, value);
-                        }
-                        else {
-                            nextNode.removeAttribute(name);
-                        }
+                        updateAttribute(oldNode, name, value);
                     }
                     if (oldVirdNode) {
-                        const oldEventMap = getVirdEventMap(oldVirdNode);
-                        for (const name of Object.keys(oldEventMap)) {
-                            const eventMap = oldEventMap[name];
-                            for (const { listener } of eventMap) {
-                                nextNode.removeEventListener(name, listener);
-                            }
-                        }
+                        offEvent(oldNode, oldVirdNode);
+                        clearVirdEvent(oldVirdNode);
                     }
-                    const oldEventMap = getVirdEventMap(newVirdNode);
-                    for (const name of Object.keys(oldEventMap)) {
-                        const eventMap = oldEventMap[name];
-                        for (const { listener, options } of eventMap) {
-                            nextNode.addEventListener(name, listener, options);
-                        }
-                    }
+                    onEvent(oldNode, newVirdNode);
                 }
                 else {
                     if (diffProperties.textContent) {
-                        nextNode.textContent = diffProperties.textContent[0] || '';
+                        oldNode.textContent = diffProperties.textContent[0] || '';
                     }
                 }
-                diffRender(nextNode, newVirdNode.children);
+                diffRender(oldNode, newVirdNode.children);
             }
         }
         else if (oldNode) {
@@ -315,6 +372,7 @@ function diffRender(rootNode, newVirdNodes) {
         newVirdNodeIndex++;
         oldVirdNodeIndex++;
     }
+    virdDom.set(rootNode, newVirdNodes);
 }
 
 function filterIgnoreVirdNode(virdNodes) {
@@ -330,13 +388,23 @@ function filterIgnoreVirdNode(virdNodes) {
     }
     return result;
 }
+/**
+ * The render() function renders a VirdNode into a Dom.
+ * @param rootNode A node to render.
+ * @param virdNodes An array of VirdNode objects to render.
+ */
 function render(rootNode, ...virdNodes) {
+    for (const reserve of reserves) {
+        cancelAnimationFrame(reserve);
+    }
+    reserves.length = 0;
     const newVirdNodeLength = virdNodes.length;
     if (newVirdNodeLength < 1)
         return;
     // Create a VirdNode for rendering.
     const clone = (virdNode) => cloneNode(virdNode, true);
-    const newVirdNodes = filterIgnoreVirdNode(virdNodes).map(clone);
+    const cloneVirdNodes = virdNodes.map(clone);
+    const newVirdNodes = filterIgnoreVirdNode(cloneVirdNodes);
     // rendering.
     diffRender(rootNode, newVirdNodes);
 }

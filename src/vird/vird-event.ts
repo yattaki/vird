@@ -67,26 +67,8 @@ export function removeVirdEvent<K extends string>(
   listenerOptionsMap.delete(listener)
 }
 
-export function getVirdEventMap(virdNode: VirdNode) {
-  const result: {
-    [key: string]: {
-      listener: VirdEventListener
-      options: VirdEventListenerOptions
-    }[]
-  } = {}
-
-  const eventListenerMap = virdEventListenerMap.get(virdNode)
-  if (eventListenerMap) {
-    for (const [key, listeners] of eventListenerMap) {
-      result[key] = []
-      for (const listener of listeners) {
-        const options = listenerOptionsMap.get(listener)
-        result[key].push({ listener, options })
-      }
-    }
-  }
-
-  return result
+export function clearVirdEvent(virdEvent: VirdNode) {
+  virdEventListenerMap.delete(virdEvent)
 }
 
 export function cloneVirdEvent(
@@ -99,6 +81,28 @@ export function cloneVirdEvent(
   for (const [key, events] of eventListenerMap) {
     for (const event of events) {
       addVirdEvent(copyVirdNode, key, event)
+    }
+  }
+}
+
+export function onEvent(node: Node, virdNode: VirdNode) {
+  const eventListenerMap = virdEventListenerMap.get(virdNode)
+  if (eventListenerMap) {
+    for (const [name, eventMap] of eventListenerMap) {
+      for (const listener of eventMap) {
+        node.addEventListener(name, listener, listenerOptionsMap.get(listener))
+      }
+    }
+  }
+}
+
+export function offEvent(node: Node, virdNode: VirdNode) {
+  const eventListenerMap = virdEventListenerMap.get(virdNode)
+  if (eventListenerMap) {
+    for (const [name, eventMap] of eventListenerMap) {
+      for (const listener of eventMap) {
+        node.removeEventListener(name, listener)
+      }
     }
   }
 }

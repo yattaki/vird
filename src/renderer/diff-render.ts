@@ -1,17 +1,22 @@
 import { createNode } from '../create-node/create-node'
 import { VirdNode } from '../vird-node/vird-node'
-import { getVirdEventMap } from '../vird/vird-event'
+import { clearVirdEvent, offEvent, onEvent } from '../vird/vird-event'
 import { createRealNode } from './create-real-node'
 import { diff } from './diff'
+import { updateAttribute } from './update-attributes'
+import { nodeMap, virdDom } from './vird-dom'
 
-const beforeVirdNodes: WeakMap<Node, VirdNode[]> = new WeakMap()
-const nodeMap: WeakMap<VirdNode, Node> = new WeakMap()
+function removeVirdDom(node: Node) {
+  virdDom.delete(node)
+  for (const childNode of node.childNodes) {
+    removeVirdDom(childNode)
+  }
+}
+
 export function diffRender(rootNode: Node, newVirdNodes: VirdNode[]) {
   const oldVirdNodes =
-    beforeVirdNodes.get(rootNode) ||
+    virdDom.get(rootNode) ||
     [...rootNode.childNodes].map(child => createNode(child))
-
-  beforeVirdNodes.set(rootNode, newVirdNodes)
 
   let index = 0
   let newVirdNodeIndex = 0
@@ -26,72 +31,56 @@ export function diffRender(rootNode: Node, newVirdNodes: VirdNode[]) {
     const oldNode = oldVirdNode && nodeMap.get(oldVirdNode)
 
     if (newVirdNode) {
-      let nextNode = oldNode
       if (!oldVirdNode || oldVirdNode.type !== newVirdNode.type) {
         const realNode = createRealNode(newVirdNode)
-        nextNode = realNode
 
         if (oldNode) {
-          beforeVirdNodes.delete(oldNode)
-
-          if (newVirdNodeLength > oldVirdNodeLength) {
-            rootNode.insertBefore(realNode, oldNode)
-            oldVirdNodeIndex--
-          } else if (newVirdNodeLength < oldVirdNodeLength) {
-            rootNode.removeChild(oldNode)
-            newVirdNodeIndex--
-          } else {
-            rootNode.replaceChild(realNode, oldNode)
+          removeVirdDom(oldNode)
+          const parent = oldNode.parentElement
+          if (parent === rootNode) {
+            if (newVirdNodeLength > oldVirdNodeLength) {
+              parent.insertBefore(realNode, oldNode)
+              oldVirdNodeIndex--
+            } else if (newVirdNodeLength < oldVirdNodeLength) {
+              parent.removeChild(oldNode)
+              newVirdNodeIndex--
+            } else {
+              parent.replaceChild(realNode, oldNode)
+            }
           }
         } else {
           rootNode.appendChild(realNode)
         }
-      }
-
-      if (nextNode) {
-        nodeMap.set(newVirdNode, nextNode)
+      } else if (oldNode) {
+        nodeMap.delete(oldVirdNode)
+        nodeMap.set(newVirdNode, oldNode)
 
         const diffProperties = diff(
           newVirdNode.properties,
-          oldVirdNode && oldVirdNode.properties
+          oldVirdNode.properties
         )
 
-        if (nextNode instanceof Element) {
+        if (oldNode instanceof Element) {
           for (const name of Object.keys(diffProperties)) {
             const newValue = diffProperties[name]
             const value = newValue && newValue[0]
 
-            if (value) {
-              nextNode.setAttribute(name, value)
-            } else {
-              nextNode.removeAttribute(name)
-            }
+            updateAttribute(oldNode, name, value)
           }
 
           if (oldVirdNode) {
-            const oldEventMap = getVirdEventMap(oldVirdNode)
-            for (const name of Object.keys(oldEventMap)) {
-              const eventMap = oldEventMap[name]
-              for (const { listener } of eventMap) {
-                nextNode.removeEventListener(name, listener)
-              }
-            }
+            offEvent(oldNode, oldVirdNode)
+            clearVirdEvent(oldVirdNode)
           }
 
-          const oldEventMap = getVirdEventMap(newVirdNode)
-          for (const name of Object.keys(oldEventMap)) {
-            const eventMap = oldEventMap[name]
-            for (const { listener, options } of eventMap) {
-              nextNode.addEventListener(name, listener, options)
-            }
-          }
+          onEvent(oldNode, newVirdNode)
         } else {
           if (diffProperties.textContent) {
-            nextNode.textContent = diffProperties.textContent[0] || ''
+            oldNode.textContent = diffProperties.textContent[0] || ''
           }
         }
 
-        diffRender(nextNode, newVirdNode.children)
+        diffRender(oldNode, newVirdNode.children)
       }
     } else if (oldNode) {
       const parent = oldNode.parentElement
@@ -104,4 +93,6 @@ export function diffRender(rootNode: Node, newVirdNodes: VirdNode[]) {
     newVirdNodeIndex++
     oldVirdNodeIndex++
   }
+
+  virdDom.set(rootNode, newVirdNodes)
 }
